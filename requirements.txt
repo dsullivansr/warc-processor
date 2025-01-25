@@ -1,0 +1,3 @@
+beautifulsoup4==4.12.3
+warcio==1.7.4
+html5lib==1.1
