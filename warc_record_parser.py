@@ -41,7 +41,6 @@ class WarcRecordParser:
                 values.
         """
         if not record or record.rec_type != 'response':
-            logger.debug("Skipping non-response record")
             return None
 
         try:

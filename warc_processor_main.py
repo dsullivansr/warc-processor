@@ -61,6 +61,12 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         action='store_true',
         help='Enable verbose logging'
     )
+    parser.add_argument(
+        '--parser',
+        choices=['html5lib', 'lxml', 'html.parser'],
+        default='html5lib',
+        help='HTML parser to use'
+    )
 
     if args is None:
         args = sys.argv[1:]
@@ -84,8 +90,8 @@ def main(args: Optional[List[str]] = None):
         format='%(levelname)-8s %(name)s:%(filename)s:%(lineno)d %(message)s'
     )
 
-    # Create processor chain
-    processor = WarcProcessorFactory.create([HtmlProcessor()])
+    # Create processor chain with specified parser
+    processor = WarcProcessorFactory.create([HtmlProcessor(parser=parsed_args.parser)])
 
     try:
         # Process WARC file

@@ -63,22 +63,27 @@ class ProcessingStats:
             bytes_processed: Total bytes processed so far.
         """
         self.bytes_processed = bytes_processed
+        self._update_progress()
 
     def track_parsed_record(self):
         """Increment count of parsed records."""
         self.records_parsed += 1
+        self._update_progress()
 
     def track_processed_record(self):
         """Increment count of successfully processed records."""
         self.records_processed += 1
+        self._update_progress()
 
     def track_skipped_record(self):
         """Increment count of skipped records."""
         self.records_skipped += 1
+        self._update_progress()
 
     def track_failed_record(self):
         """Increment count of failed records."""
         self.records_failed += 1
+        self._update_progress()
 
     def _update_progress(self, force: bool = False):
         """Update progress tracking.

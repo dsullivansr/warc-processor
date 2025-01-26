@@ -10,7 +10,7 @@ from typing import Optional
 
 from bs4 import BeautifulSoup
 
-from models.warc_record import WarcRecord
+from models.warc_record import WarcRecord, ProcessedWarcRecord
 from warc_record_processor import WarcRecordProcessor
 
 logger = logging.getLogger(__name__)
