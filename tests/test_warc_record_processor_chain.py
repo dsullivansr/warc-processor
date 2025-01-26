@@ -9,6 +9,7 @@ from warc_record_processor import WarcRecordProcessor
 from warc_record_processor_chain import WarcRecordProcessorChain
 
 
+# pylint: disable=duplicate-code
 class TestWarcRecordProcessorChain(unittest.TestCase):
     """Test WarcRecordProcessorChain."""
 

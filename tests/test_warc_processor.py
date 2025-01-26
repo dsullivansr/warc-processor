@@ -12,11 +12,15 @@ from output_writer import OutputWriter
 from warc_record_parser import WarcRecordParser
 from warc_record_processor_chain import WarcRecordProcessorChain
 
-
 # TODO(dsullivan): Consider refactoring test class to use a fixture object
 # that encapsulates the mock objects and temporary files. This would reduce
 # the number of instance attributes while making the test setup clearer.
 # pylint: disable=too-many-instance-attributes
+
+
+# TODO(dsullivan): Consider creating a test_utils.py with common WARC test data.
+# For now, keeping the test data duplicated for test independence and clarity.
+# pylint: disable=duplicate-code
 class TestWarcProcessor(unittest.TestCase):
     """Test cases for WarcProcessor."""
 

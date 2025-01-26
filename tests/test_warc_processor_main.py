@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from warc_processor_main import main
 
 
+# pylint: disable=duplicate-code
 class TestWarcProcessorMain(unittest.TestCase):
     """Test cases for WarcProcessorMain."""
 

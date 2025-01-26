@@ -18,6 +18,10 @@ from models.warc_record import WarcRecord
 logger = logging.getLogger(__name__)
 
 
+# TODO(dsullivan): Consider extracting common record creation code into a shared
+# utility. For now, keeping it duplicated since it represents core WARC fields
+# and extracting it would add complexity.
+# pylint: disable=duplicate-code
 class WarcRecordParser:
     """Parser for converting warcio records to WarcRecord objects.
 
