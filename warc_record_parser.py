@@ -17,6 +17,7 @@ from models.warc_record import WarcRecord
 
 logger = logging.getLogger(__name__)
 
+
 class WarcRecordParser:
     """Parser for converting warcio records to WarcRecord objects.
 
@@ -72,7 +73,8 @@ class WarcRecordParser:
             # Get content info
             http_headers = record.http_headers
             default_type = 'text/html'
-            content_type = ContentType(http_headers.get_header('Content-Type', default_type))
+            content_type = ContentType(
+                http_headers.get_header('Content-Type', default_type))
             stream = record.content_stream()
             content = stream.read().decode('utf-8', errors='ignore')
             content_length = len(content)
@@ -102,11 +104,11 @@ class WarcRecordParser:
             )
 
         except (
-            ValueError,
-            URLError,
-            AttributeError,
-            IOError,
-            UnicodeError,
+                ValueError,
+                URLError,
+                AttributeError,
+                IOError,
+                UnicodeError,
         ) as e:
             logger.debug("Failed to parse record: %s", str(e))
             return None

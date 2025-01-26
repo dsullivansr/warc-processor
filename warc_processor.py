@@ -29,8 +29,8 @@ class WarcProcessor:
     5. Tracking processing statistics
     """
 
-    # TODO(dsullivan): Consider refactoring to reduce number of constructor arguments
-    # by having WarcProcessor create its own processor_chain from processors.
+    # TODO(dsullivan): Consider refactoring to reduce constructor arguments by
+    # having WarcProcessor create its own processor_chain from processors.
     # pylint: disable=too-many-arguments
     def __init__(self, *, processors: List[WarcRecordProcessor],
                  output_writer: OutputWriter, record_parser: WarcRecordParser,
