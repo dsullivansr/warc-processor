@@ -93,7 +93,7 @@ class ProcessingStats:
         """
         if bytes_count < 0:
             raise ValueError("Bytes processed cannot be negative")
-        self.bytes_processed = bytes_count
+        self.bytes_processed += bytes_count
 
     def track_parsed_record(self) -> None:
         """Track successfully parsed record."""

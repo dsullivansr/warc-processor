@@ -81,8 +81,7 @@ class WarcProcessor:
                 for record in ArchiveIterator(warc_file):
                     # Track bytes processed
                     try:
-                        content_length = int(
-                            record.http_headers.get('Content-Length', 0))
+                        content_length = record.length
                     except (ValueError, AttributeError, TypeError):
                         content_length = 0
 
