@@ -88,8 +88,17 @@ def main(args: Optional[List[str]] = None):
         print(f"Skipped {stats.records_skipped} records")
         print(f"Failed {stats.records_failed} records")
 
-    except Exception as e:
-        print(f"Error processing WARC file: {e}", file=sys.stderr)
+    except FileNotFoundError as e:
+        print(f"File not found: {e}", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError as e:
+        print(f"Permission denied: {e}", file=sys.stderr)
+        sys.exit(1)
+    except ValueError as e:
+        print(f"Invalid WARC file: {e}", file=sys.stderr)
+        sys.exit(1)
+    except IOError as e:
+        print(f"I/O error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
