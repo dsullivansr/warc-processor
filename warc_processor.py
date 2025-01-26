@@ -30,12 +30,12 @@ class WarcProcessor:
     """
 
     def __init__(
-        self,
-        processors: List[WarcRecordProcessor],
-        output_writer: OutputWriter,
-        record_parser: WarcRecordParser,
-        stats: ProcessingStats,
-        processor_chain: WarcRecordProcessorChain
+            self,
+            processors: List[WarcRecordProcessor],
+            output_writer: OutputWriter,
+            record_parser: WarcRecordParser,
+            stats: ProcessingStats,
+            processor_chain: WarcRecordProcessorChain
     ):
         """Initialize processor.
 
@@ -53,7 +53,9 @@ class WarcProcessor:
         self.processor_chain = processor_chain
 
     def process_warc_file(
-        self, warc_path: str, output_path: str
+            self,
+            warc_path: str,
+            output_path: str
     ) -> ProcessingStats:
         """Process a WARC file.
 
@@ -94,7 +96,8 @@ class WarcProcessor:
                     # Update bytes processed by reading content length
                     content_length = 0
                     if record.http_headers:
-                        content_length = int(record.http_headers.get('Content-Length', 0))
+                        content_length = int(
+                            record.http_headers.get('Content-Length', 0))
                     bytes_processed += content_length
                     self.stats.track_bytes_processed(bytes_processed)
                     
@@ -114,12 +117,14 @@ class WarcProcessor:
 
                     # Create processed record and write
                     processed_record = ProcessedWarcRecord.from_record(
-                        warc_record, processed_content)
+                        warc_record,
+                        processed_content
+                    )
                     self.output_writer.write_record(processed_record)
                     self.stats.track_processed_record()
 
                 except Exception as e:
-                    logger.error(f"Failed to process record: {e}")
+                    logger.error("Failed to process record: %s", str(e))
                     self.stats.track_failed_record()
 
         return self.stats

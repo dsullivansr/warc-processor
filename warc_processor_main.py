@@ -20,34 +20,34 @@ from warc_record_processor_chain import WarcRecordProcessorChain
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     """Parse command line arguments.
-    
+
     Args:
         args: List of command line arguments. If None, sys.argv[1:] is used.
-        
+
     Returns:
         Parsed command line arguments.
     """
     parser = argparse.ArgumentParser(
         description="""Process WARC files to extract content.
-        
+
         This tool processes WARC (Web ARChive) files according to the ISO 28500
         specification. Common sources for WARC files include:
         1. Common Crawl (https://commoncrawl.org)
         2. Internet Archive (https://archive.org)
         3. Custom web crawls using tools like wget or Heritrix
-        
+
         The tool supports various processors that can be applied to the WARC
         records, such as:
         - HTML processing to extract readable text
         - Metadata extraction
         - Content classification
         - Custom processors
-        
+
         Processed records are written to an output file in a configurable format.
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    
+
     parser.add_argument(
         'input',
         help='Input WARC file path'
@@ -61,47 +61,43 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         action='store_true',
         help='Enable verbose logging'
     )
-    
+
     if args is None:
         args = sys.argv[1:]
-        
+
     return parser.parse_args(args)
 
 
 def main(args: Optional[List[str]] = None):
     """Main entry point.
-    
+
     Args:
         args: Command line arguments. If None, sys.argv[1:] is used.
     """
     # Parse arguments
     parsed_args = parse_args(args)
-    
+
     # Configure logging
-    if parsed_args.verbose:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-        
+    log_level = logging.DEBUG if parsed_args.verbose else logging.INFO
     logging.basicConfig(
         level=log_level,
         format='%(levelname)-8s %(name)s:%(filename)s:%(lineno)d %(message)s'
     )
-    
+
     # Create processor chain
     processor = WarcProcessorFactory.create([HtmlProcessor()])
-    
+
     try:
         # Process WARC file
         stats = processor.process_warc_file(parsed_args.input, parsed_args.output)
-        
+
         # Print final stats
-        print(f"\nProcessed {stats.records_processed} records")
-        print(f"Skipped {stats.records_skipped} records")
-        print(f"Failed {stats.records_failed} records")
-        
+        print("\nProcessed %d records" % stats.records_processed)
+        print("Skipped %d records" % stats.records_skipped)
+        print("Failed %d records" % stats.records_failed)
+
     except Exception as e:
-        print(f"Error processing WARC file: {e}", file=sys.stderr)
+        print("Error processing WARC file: %s" % e, file=sys.stderr)
         sys.exit(1)
 
 
