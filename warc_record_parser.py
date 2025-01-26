@@ -17,7 +17,6 @@ from models.warc_record import WarcRecord
 
 logger = logging.getLogger(__name__)
 
-
 class WarcRecordParser:
     """Parser for converting warcio records to WarcRecord objects.
 
@@ -28,6 +27,9 @@ class WarcRecordParser:
     3. Building the complete WarcRecord object
     """
 
+    # TODO(dsullivan): Consider refactoring parse method to reduce number of
+    # local variables by extracting helper methods.
+    # pylint: disable=too-many-locals
     def parse(self, record: ArcWarcRecord) -> Optional[WarcRecord]:
         """Parse a warcio record into a WarcRecord.
 
@@ -41,10 +43,12 @@ class WarcRecordParser:
             ValueError: If record is missing required fields or has invalid
                 values.
         """
-        if not record or record.rec_type != 'response':
-            return None
-
         try:
+            # Early validation
+            if not record or record.rec_type != 'response':
+                logger.debug("Not a response record")
+                return None
+
             # Check response status
             if isinstance(record.http_headers, StatusAndHeaders):
                 status = record.http_headers.get_statuscode()
@@ -52,44 +56,39 @@ class WarcRecordParser:
                     logger.debug("Skipping non-200 response: %s", status)
                     return None
 
-            # Extract required fields
-            record_id = WarcRecordId(
-                record.rec_headers.get_header('WARC-Record-ID'))
-            target_uri = WarcUri.from_str(
-                record.rec_headers.get_header('WARC-Target-URI'))
-            if not target_uri:
-                logger.debug("Missing required field: WARC-Target-URI")
-                return None
+            # Extract and validate required fields
+            headers = record.rec_headers
+            record_id = WarcRecordId(headers.get_header('WARC-Record-ID'))
+            target_uri = WarcUri.from_str(headers.get_header('WARC-Target-URI'))
+            date = headers.get_header('WARC-Date')
 
-            date = record.rec_headers.get_header('WARC-Date')
-            if not date:
-                logger.debug("Missing required field: WARC-Date")
+            if not all([target_uri, date]):
+                if not target_uri:
+                    logger.debug("Missing required field: WARC-Target-URI")
+                if not date:
+                    logger.debug("Missing required field: WARC-Date")
                 return None
 
             # Get content info
-            content_type = ContentType(
-                record.http_headers.get_header('Content-Type', 'text/html'))
-            try:
-                stream = record.content_stream()
-                content = stream.read().decode('utf-8', errors='ignore')
-            except (IOError, UnicodeError) as e:
-                logger.debug("Failed to read content stream: %s", str(e))
-                return None
-
+            http_headers = record.http_headers
+            default_type = 'text/html'
+            content_type = ContentType(http_headers.get_header('Content-Type', default_type))
+            stream = record.content_stream()
+            content = stream.read().decode('utf-8', errors='ignore')
             content_length = len(content)
 
             # Get optional fields
-            payload_digest = record.rec_headers.get_header(
-                'WARC-Payload-Digest')
+            payload_digest = headers.get_header('WARC-Payload-Digest')
             if payload_digest:
                 payload_digest = PayloadDigest(payload_digest)
 
             # Build headers dict
-            headers = {}
-            if isinstance(record.http_headers, StatusAndHeaders):
-                for name, value in record.http_headers.headers:
-                    headers[name] = value
+            response_headers = {}
+            if isinstance(http_headers, StatusAndHeaders):
+                for name, value in http_headers.headers:
+                    response_headers[name] = value
 
+            # Build and return record
             return WarcRecord(
                 record_id=record_id,
                 record_type=record.rec_type,
@@ -98,10 +97,16 @@ class WarcRecordParser:
                 content_type=content_type,
                 content=content,
                 content_length=content_length,
-                headers=headers,
+                headers=response_headers,
                 payload_digest=payload_digest,
             )
 
-        except (ValueError, URLError, AttributeError) as e:
+        except (
+            ValueError,
+            URLError,
+            AttributeError,
+            IOError,
+            UnicodeError,
+        ) as e:
             logger.debug("Failed to parse record: %s", str(e))
             return None
