@@ -2,6 +2,7 @@
 
 import sys
 from warcio.archiveiterator import ArchiveIterator
+from warcio.exceptions import ArchiveLoadFailed
 
 
 def process_warc(warc_path: str) -> None:
@@ -21,8 +22,14 @@ def process_warc(warc_path: str) -> None:
                     print(f"First 200 bytes: {content[:200]}")
                     break  # Just process one response record as a test
 
-    except Exception as e:
-        print(f"Error: {e}")
+    except FileNotFoundError as e:
+        print(f"File not found: {e}")
+    except PermissionError as e:
+        print(f"Permission denied: {e}")
+    except ArchiveLoadFailed as e:
+        print(f"Invalid WARC file: {e}")
+    except OSError as e:
+        print(f"I/O error: {e}")
 
 
 if __name__ == '__main__':
