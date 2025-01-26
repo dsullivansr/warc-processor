@@ -65,7 +65,7 @@ class WarcRecordParser:
                 return None
                 
             # Get content info
-            content_type = record.http_headers.get_header('Content-Type', 'text/html')
+            content_type = ContentType(record.http_headers.get_header('Content-Type', 'text/html'))
             try:
                 stream = record.content_stream()
                 content = stream.read().decode('utf-8', errors='ignore')
@@ -99,5 +99,5 @@ class WarcRecordParser:
             )
             
         except Exception as e:
-            logger.error("Failed to parse record: %s", str(e))
+            logger.debug("Failed to parse record: %s", str(e))
             return None

@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from warcio.statusandheaders import StatusAndHeaders
+from models.warc_mime_types import ContentType
 from warc_record_parser import WarcRecordParser
 
 
@@ -40,7 +41,7 @@ class TestWarcRecordParser(unittest.TestCase):
         self.assertEqual(record.record_id, '<test-id>')
         self.assertEqual(str(record.target_uri), 'http://example.com')
         self.assertEqual(record.date, '2025-01-24T12:34:56Z')
-        self.assertEqual(record.content_type, 'text/html')
+        self.assertEqual(record.content_type, ContentType('text/html'))
         self.assertEqual(record.content, '<html><body>test</body></html>')
         
     def test_parse_non_response_record(self):

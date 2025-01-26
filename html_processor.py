@@ -25,6 +25,18 @@ class HtmlProcessor(WarcRecordProcessor):
     3. Extracting text content with proper whitespace handling
     """
     
+    def __init__(self, parser: str = 'html5lib'):
+        """Initialize processor.
+        
+        Args:
+            parser: HTML parser to use. Options are:
+                   - 'html5lib': Slower but more accurate
+                   - 'lxml': Faster but less accurate for malformed HTML
+                   - 'html.parser': Python's built-in parser
+        """
+        self.parser = parser
+        super().__init__()
+    
     def can_process(self, record: WarcRecord) -> bool:
         """Check if this processor can handle the record.
         
@@ -53,8 +65,8 @@ class HtmlProcessor(WarcRecordProcessor):
             ValueError: If HTML parsing fails.
         """
         try:
-            # Parse HTML
-            soup = BeautifulSoup(record.content, 'html5lib')
+            # Parse HTML with specified parser
+            soup = BeautifulSoup(record.content, self.parser)
             
             # Remove unwanted elements
             for element in soup(['script', 'style', 'meta', 'link']):
@@ -70,5 +82,5 @@ class HtmlProcessor(WarcRecordProcessor):
             return text
             
         except Exception as e:
-            logger.error("Failed to process HTML: %s", str(e))
-            raise ValueError(f"Failed to process HTML: {str(e)}") from e
+            logger.error("Failed to process HTML with parser '%s': %s", self.parser, str(e))
+            raise ValueError(f"Failed to process HTML with parser '{self.parser}': {str(e)}") from e

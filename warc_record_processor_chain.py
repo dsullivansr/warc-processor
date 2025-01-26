@@ -46,18 +46,19 @@ class WarcRecordProcessorChain:
             ValueError: If processing fails.
         """
         # Process record through chain
-        current_content = None
+        current_content = record.content
         for processor in self.processors:
             # Check if processor can handle record
             if not processor.can_process(record):
                 continue
                 
             try:
+                # Update record content and process
+                record.content = current_content
                 result = processor.process(record)
                 if result is not None:
                     # Update content for next processor
                     current_content = result
-                    record.content = current_content
                     
             except Exception as e:
                 logger.error("Processor %s failed: %s",
@@ -65,7 +66,7 @@ class WarcRecordProcessorChain:
                 return None
                     
         # Return None if no processor succeeded
-        if not current_content:
+        if current_content == record.content:
             return None
             
         return current_content

@@ -48,7 +48,12 @@ class ContentType:
         type_parts = parts[0].strip().split('/', 1)
         
         self.main_type = type_parts[0].lower()
-        self.subtype = type_parts[1].lower() if len(type_parts) > 1 else ''
+        
+        if len(type_parts) > 1:
+            self.subtype = type_parts[1].lower()
+        else:
+            self.subtype = ''
+            
         self.parameters = {}
         
         if len(parts) > 1:
@@ -62,7 +67,8 @@ class ContentType:
     
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ContentType):
-            return NotImplemented
+            return False
+            
         return (self.main_type == other.main_type and 
                 self.subtype == other.subtype)
     
@@ -81,7 +87,8 @@ class ContentType:
             return False
         
         pattern_main, pattern_sub = pattern.lower().split('/', 1)
-        return (
-            (pattern_main == '*' or pattern_main == self.main_type) and
-            (pattern_sub == '*' or pattern_sub == self.subtype)
-        )
+        
+        if pattern_main == '*' or pattern_main == self.main_type:
+            if pattern_sub == '*' or pattern_sub == self.subtype:
+                return True
+        return False

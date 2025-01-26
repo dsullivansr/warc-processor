@@ -26,8 +26,16 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_processor = MagicMock()
         self.mock_writer = MagicMock(spec=OutputWriter)
         self.mock_parser = MagicMock(spec=WarcRecordParser)
-        self.mock_stats = MagicMock(spec=ProcessingStats)
         self.mock_chain = MagicMock(spec=WarcRecordProcessorChain)
+        
+        # Create mock stats with proper attributes
+        self.mock_stats = MagicMock(spec=ProcessingStats)
+        self.mock_stats.input_size_mb = 0.1
+        self.mock_stats.records_processed = 0
+        self.mock_stats.records_parsed = 0
+        self.mock_stats.records_skipped = 0
+        self.mock_stats.records_failed = 0
+        self.mock_stats.bytes_processed = 0
         
         # Create processor
         self.processor = WarcProcessor(

@@ -1,108 +1,123 @@
-"""Processing statistics.
+"""Processing statistics tracking.
 
-This module provides functionality for tracking statistics about WARC record
-processing.
+This module provides functionality for tracking and reporting WARC processing
+statistics.
 """
 
 import logging
 import os
-from typing import Dict, Any
+import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
 class ProcessingStats:
-    """Tracks statistics about WARC record processing.
-
-    This class maintains counters for:
-    1. Number of records processed successfully
-    2. Number of records skipped
-    3. Number of records that failed processing
-    4. Total bytes processed
-    5. Number of records parsed successfully
+    """Tracks statistics about WARC file processing.
+    
+    This class maintains counts and other metrics about the processing of WARC
+    records, including:
+    - Total records processed, skipped, and failed
+    - Bytes processed
+    - Input file size
+    - Percentage of completion
+    
+    It also provides functionality for periodic progress reporting.
     """
-
+    
     def __init__(self):
         """Initialize processing statistics."""
         self.reset_stats()
-
+        
+        # Configure progress reporting
+        self.progress_interval = 100  # Records between progress updates
+        self.progress_update_interval = 1.0  # Seconds between progress updates
+        self.last_progress_time = 0
+        
     def reset_stats(self):
-        """Reset all statistics to zero."""
-        self._stats = {
-            'records_processed': 0,
-            'records_parsed': 0,
-            'records_skipped': 0,
-            'records_failed': 0,
-            'input_size': 0,
-            'input_size_mb': 0.0,
-            'bytes_processed': 0,
-        }
-
-    def track_processed_record(self):
-        """Track a successfully processed record."""
-        self._stats['records_processed'] += 1
-
-    def track_parsed_record(self):
-        """Track a successfully parsed record."""
-        self._stats['records_parsed'] += 1
-
-    def track_skipped_record(self):
-        """Track a skipped record."""
-        self._stats['records_skipped'] += 1
-
-    def track_failed_record(self):
-        """Track a failed record."""
-        self._stats['records_failed'] += 1
-
+        """Reset all statistics to initial values."""
+        # Record counts
+        self.records_parsed = 0
+        self.records_processed = 0
+        self.records_skipped = 0
+        self.records_failed = 0
+        
+        # Size tracking
+        self.bytes_processed = 0
+        self.input_size = 0
+        self.input_size_mb = 0
+        
     def set_input_size(self, input_path: str):
-        """Set input size statistics from file path.
-
+        """Set input file size for progress tracking.
+        
         Args:
-            input_path: Path to input file.
+            input_path: Path to input WARC file.
         """
-        size_bytes = os.path.getsize(input_path)
-        self._stats['input_size'] = size_bytes
-        self._stats['input_size_mb'] = size_bytes / (1024 * 1024)
+        self.input_size = os.path.getsize(input_path)
+        self.input_size_mb = self.input_size / (1024 * 1024)  # Convert to MB
+        
+    def track_bytes_processed(self, bytes_processed: int):
+        """Update bytes processed count.
+        
+        Args:
+            bytes_processed: Total bytes processed so far.
+        """
+        self.bytes_processed = bytes_processed
+        
+    def track_parsed_record(self):
+        """Increment count of parsed records."""
+        self.records_parsed += 1
+        
+    def track_processed_record(self):
+        """Increment count of successfully processed records."""
+        self.records_processed += 1
+        
+    def track_skipped_record(self):
+        """Increment count of skipped records."""
+        self.records_skipped += 1
+        
+    def track_failed_record(self):
+        """Increment count of failed records."""
+        self.records_failed += 1
+        
+    def _update_progress(self, force: bool = False):
+        """Update progress tracking.
+        
+        Args:
+            force: If True, update progress regardless of interval.
+        """
+        current_time = time.time()
+        if not force and (current_time - self.last_progress_time) < self.progress_update_interval:
+            return
+            
+        total_records = self.records_processed + self.records_skipped + self.records_failed
+        if total_records % self.progress_interval == 0 or force:
+            mb_processed = self.bytes_processed / (1024 * 1024)
+            
+            # Calculate percent complete
+            percent_complete = 0
+            if self.input_size_mb > 0:
+                percent_complete = (mb_processed / self.input_size_mb) * 100
+            
+            logger.info(
+                f"Processed {total_records} records "
+                f"({mb_processed:.1f}/{self.input_size_mb:.1f} MB, "
+                f"{percent_complete:.1f}%)"
+            )
+            self.last_progress_time = current_time
 
-    @property
-    def records_processed(self) -> int:
-        """Get the number of records successfully processed."""
-        return self._stats['records_processed']
-
-    @property
-    def records_parsed(self) -> int:
-        """Get the number of records successfully parsed."""
-        return self._stats['records_parsed']
-
-    @property
-    def records_skipped(self) -> int:
-        """Get the number of records skipped during processing."""
-        return self._stats['records_skipped']
-
-    @property
-    def records_failed(self) -> int:
-        """Get the number of records that failed processing."""
-        return self._stats['records_failed']
-
-    @property
-    def input_size(self) -> int:
-        """Get the input file size in bytes."""
-        return self._stats['input_size']
-
-    @property
-    def input_size_mb(self) -> float:
-        """Get the input file size in megabytes."""
-        return self._stats['input_size_mb']
-
-    @property
-    def bytes_processed(self) -> int:
-        """Get the total number of bytes processed."""
-        return self._stats['bytes_processed']
-
-    def get_summary(self) -> Dict[str, Any]:
-        """Get a summary of processing statistics.
-
+    def get_summary(self) -> dict:
+        """Get summary of processing statistics.
+        
         Returns:
-            Dictionary containing all statistics.
+            Dictionary with statistics summary.
         """
-        return self._stats.copy()
+        return {
+            'records_parsed': self.records_parsed,
+            'records_processed': self.records_processed,
+            'records_skipped': self.records_skipped,
+            'records_failed': self.records_failed,
+            'bytes_processed': self.bytes_processed,
+            'input_size': self.input_size,
+            'input_size_mb': self.input_size_mb
+        }

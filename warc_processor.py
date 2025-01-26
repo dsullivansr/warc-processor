@@ -82,10 +82,22 @@ class WarcProcessor:
         # Set input size
         self.stats.set_input_size(str(input_path))
 
+        print(f"\nProcessing WARC file: {input_path}")
+        print(f"File size: {self.stats.input_size_mb:.1f} MB")
+        print("-" * 50)
+
         # Process records
+        bytes_processed = 0
         with open(str(input_path), 'rb') as warc_file:
             for record in ArchiveIterator(warc_file):
                 try:
+                    # Update bytes processed by reading content length
+                    content_length = 0
+                    if record.http_headers:
+                        content_length = int(record.http_headers.get('Content-Length', 0))
+                    bytes_processed += content_length
+                    self.stats.track_bytes_processed(bytes_processed)
+                    
                     # Parse record
                     warc_record = self.record_parser.parse(record)
                     if not warc_record:
@@ -95,20 +107,19 @@ class WarcProcessor:
                     self.stats.track_parsed_record()
 
                     # Process record
-                    processed = self.processor_chain.process(warc_record)
-                    if not processed:
+                    processed_content = self.processor_chain.process(warc_record)
+                    if not processed_content:
                         self.stats.track_skipped_record()
                         continue
 
-                    # Write processed record
-                    processed_record = (
-                        ProcessedWarcRecord.from_record(warc_record, processed)
-                    )
+                    # Create processed record and write
+                    processed_record = ProcessedWarcRecord.from_record(
+                        warc_record, processed_content)
                     self.output_writer.write_record(processed_record)
                     self.stats.track_processed_record()
 
                 except Exception as e:
-                    logger.error("Failed to process record: %s", str(e))
+                    logger.error(f"Failed to process record: {e}")
                     self.stats.track_failed_record()
 
         return self.stats

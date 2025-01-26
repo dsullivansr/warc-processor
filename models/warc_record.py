@@ -1,40 +1,27 @@
-"""Data models for WARC record processing.
+"""WARC record models.
 
-This module provides data structures for representing WARC (Web ARChive) records
-and their associated metadata.
+This module provides models for representing WARC records and their processed
+versions.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
-from models.warc_mime_types import ContentType
 from models.warc_identifiers import PayloadDigest, WarcRecordId, WarcUri
+from models.warc_mime_types import ContentType
 
 
 @dataclass
 class WarcRecord:
-    """Represents a WARC record with its essential fields.
-
-    Attributes:
-        record_id: Unique identifier for the WARC record.
-        record_type: Type of WARC record (e.g., 'response', 'request').
-        target_uri: Target URI of the WARC record.
-        date: Timestamp of when the record was created.
-        content_type: MIME type of the record content.
-        content: Actual content of the record.
-        content_length: Length of the content in bytes.
-        headers: Dictionary of WARC headers.
-        http_headers: Optional HTTP headers if present.
-        concurrent_to: Optional reference to concurrent WARC record.
-        ip_address: Optional IP address of the server.
-        payload_type: Optional MIME type of the payload.
-        payload_digest: Optional digest of the payload.
-        identified_payload_type: Optional identified type of the payload.
-        truncated: Optional truncation information.
-        extra_fields: Optional dictionary for additional fields.
+    """Represents a WARC record.
+    
+    This class provides a structured representation of a WARC record, including:
+    1. Record metadata (ID, type, URI, date)
+    2. Content information (type, length, raw content)
+    3. Optional fields (payload digest, headers)
     """
-
+    
     record_id: WarcRecordId
     record_type: str
     target_uri: WarcUri
@@ -43,107 +30,166 @@ class WarcRecord:
     content: str
     content_length: int
     headers: Dict[str, str]
-    http_headers: Optional[Dict[str, str]] = None
+    payload_digest: Optional[PayloadDigest] = None
     concurrent_to: Optional[WarcRecordId] = None
     ip_address: Optional[str] = None
     payload_type: Optional[ContentType] = None
-    payload_digest: Optional[PayloadDigest] = None
     identified_payload_type: Optional[ContentType] = None
     truncated: Optional[str] = None
-    extra_fields: Optional[Dict[str, Any]] = None
-
+    http_headers: Optional[Dict[str, str]] = None
+    
     @classmethod
     def from_warc_record(cls, record) -> 'WarcRecord':
-        """Creates a WarcRecord instance from a warcio record.
-
+        """Create WarcRecord from warcio record.
+        
         Args:
-            record: A warcio.recordloader.ArcWarcRecord instance.
-
+            record: Raw warcio record.
+            
         Returns:
-            A new WarcRecord instance populated with data from the input record.
+            Parsed WarcRecord.
+            
+        Raises:
+            ValueError: If record is missing required fields.
         """
-        headers = dict(record.rec_headers.headers)
-        http_headers = (dict(record.http_headers.headers) if record.http_headers 
-                       else None)
+        # Get required fields
+        record_id = WarcRecordId(record.rec_headers.get_header('WARC-Record-ID'))
+        target_uri = WarcUri.from_str(record.rec_headers.get_header('WARC-Target-URI'))
+        date_str = record.rec_headers.get_header('WARC-Date')
+        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
         
-        # Get content type from HTTP headers if available
-        content_type = ''
+        # Get content info
+        content_type = None
         if record.http_headers:
-            content_type = record.http_headers.get_header('Content-Type', '')
+            content_type = ContentType(record.http_headers.get_header('Content-Type', 'text/html'))
         if not content_type:
-            content_type = headers.get('Content-Type', '')
-
-        # Get content from record
-        content = record._content.decode('utf-8') if record._content else ''
-        
+            content_type = ContentType('text/html')
+            
+        # Get content
+        content = ''
+        if record._content:
+            content = record._content.decode('utf-8')
+            
+        # Get WARC headers
+        headers = {}
+        for name, value in record.rec_headers.headers:
+            headers[name] = value
+                
+        # Get HTTP headers
+        http_headers = None
+        if record.http_headers:
+            http_headers = {}
+            for name, value in record.http_headers.headers:
+                http_headers[name] = value
+                
+        # Build optional fields
+        payload_digest = None
+        if record.rec_headers.get_header('WARC-Payload-Digest'):
+            payload_digest = PayloadDigest(record.rec_headers.get_header('WARC-Payload-Digest'))
+            
+        # Get concurrent_to
+        concurrent_to = None
+        if record.rec_headers.get_header('WARC-Concurrent-To'):
+            concurrent_to = WarcRecordId(record.rec_headers.get_header('WARC-Concurrent-To'))
+            
+        # Get IP address
+        ip_address = record.rec_headers.get_header('WARC-IP-Address') or None
+            
+        # Get payload type
+        payload_type = None
+        if record.rec_headers.get_header('WARC-Payload-Type'):
+            payload_type = ContentType(record.rec_headers.get_header('WARC-Payload-Type'))
+            
+        # Get identified payload type
+        identified_payload_type = None
+        if record.rec_headers.get_header('WARC-Identified-Payload-Type'):
+            identified_payload_type = ContentType(record.rec_headers.get_header('WARC-Identified-Payload-Type'))
+            
+        # Get truncated
+        truncated = record.rec_headers.get_header('WARC-Truncated') or None
+                
         return cls(
-            record_id=WarcRecordId(headers.get('WARC-Record-ID', '')),
+            record_id=record_id,
             record_type=record.rec_type,
-            target_uri=WarcUri.from_str(headers.get('WARC-Target-URI', '')),
-            date=datetime.strptime(
-                headers.get('WARC-Date', ''), 
-                '%Y-%m-%dT%H:%M:%SZ'
-            ),
-            content_type=ContentType(content_type),
+            target_uri=target_uri,
+            date=date,
+            content_type=content_type,
             content=content,
-            content_length=int(headers.get('Content-Length', 0)),
+            content_length=len(content),
             headers=headers,
-            http_headers=http_headers,
-            concurrent_to=(WarcRecordId(headers['WARC-Concurrent-To'])
-                         if 'WARC-Concurrent-To' in headers else None),
-            ip_address=headers.get('WARC-IP-Address'),
-            payload_type=(ContentType(headers['WARC-Payload-Type'])
-                        if 'WARC-Payload-Type' in headers else None),
-            payload_digest=(PayloadDigest(headers['WARC-Payload-Digest'])
-                          if 'WARC-Payload-Digest' in headers else None),
-            identified_payload_type=(
-                ContentType(headers['WARC-Identified-Payload-Type'])
-                if 'WARC-Identified-Payload-Type' in headers else None
-            ),
-            truncated=headers.get('WARC-Truncated')
+            payload_digest=payload_digest,
+            concurrent_to=concurrent_to,
+            ip_address=ip_address,
+            payload_type=payload_type,
+            identified_payload_type=identified_payload_type,
+            truncated=truncated,
+            http_headers=http_headers
         )
 
 
 @dataclass
 class ProcessedWarcRecord:
-    """Represents a processed WARC record."""
+    """Represents a processed WARC record.
+    
+    This class combines the original WARC record with its processed content
+    and any additional metadata from processing.
+    """
     
     record: WarcRecord
     processed_content: str
-    metadata: Dict = field(default_factory=dict)
+    metadata: Optional[Dict[str, str]] = None
     
     @property
     def url(self) -> str:
-        """Get the URL of the record."""
-        return self.record.target_uri
-    
+        """Get the URL of the record.
+        
+        Returns:
+            Target URI as string.
+        """
+        return str(self.record.target_uri)
+        
     @property
     def original_record(self) -> WarcRecord:
-        """Get the original WARC record."""
+        """Get the original WARC record.
+        
+        Returns:
+            Original WarcRecord.
+        """
         return self.record
-    
+        
     @classmethod
-    def from_record(cls, record: WarcRecord, processed_content: str, metadata: Optional[Dict] = None) -> 'ProcessedWarcRecord':
-        """Create a processed record from a WARC record and processed content.
+    def from_record(cls, record: WarcRecord, processed_content: str,
+                   metadata: Optional[Dict[str, str]] = None) -> 'ProcessedWarcRecord':
+        """Create ProcessedWarcRecord from WarcRecord and processed content.
         
         Args:
-            record: Original WARC record.
-            processed_content: Processed content.
-            metadata: Optional metadata dictionary.
+            record: Original WarcRecord.
+            processed_content: Content after processing.
+            metadata: Optional metadata from processing.
             
         Returns:
-            ProcessedWarcRecord object.
+            New ProcessedWarcRecord.
         """
+        if metadata is None:
+            metadata = {}
+            
         return cls(
             record=record,
             processed_content=processed_content,
-            metadata=metadata or {}
+            metadata=metadata
         )
         
-    def __str__(self) -> str:
+    def __str__(self):
         """Get string representation.
         
         Returns:
-            String representation.
+            Record as string with metadata and content.
         """
-        return f"ProcessedWarcRecord(url={self.url}, content_length={len(self.processed_content)})"
+        parts = [
+            f"URI: {self.record.target_uri}",
+            f"Date: {self.record.date.strftime('%Y-%m-%dT%H:%M:%SZ')}",
+            f"Content-Type: {self.record.content_type}",
+            f"Content Length: {len(self.processed_content)}",
+            "",
+            self.processed_content
+        ]
+        return "\n".join(parts)
