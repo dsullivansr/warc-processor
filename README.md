@@ -133,6 +133,48 @@ class MyProcessor(WarcRecordProcessor):
             return None
 ```
 
+## Code Quality Requirements
+
+This project enforces strict code quality standards:
+
+### Style Guide
+- We follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
+- Maximum line length is 80 characters
+- Code formatting is enforced using `yapf`
+- Code style is checked using `pylint`
+
+### Pre-commit Hooks
+After cloning the repository, install the pre-commit hooks:
+```bash
+./scripts/install-hooks.sh
+```
+
+This will install hooks that check:
+1. Code formatting (yapf)
+2. Style compliance (pylint)
+3. Test success (pytest)
+
+### Continuous Integration
+All pull requests must pass:
+- Style checks
+- Linting
+- Unit tests
+
+These checks are automatically run via GitHub Actions.
+
+### Code Review
+- All changes must be reviewed and approved
+- Code owners (@dsullivansr) are automatically requested for review
+- Pull requests cannot be merged until all checks pass
+
+### Development Workflow
+1. Install pre-commit hooks
+2. Make your changes
+3. Commit (hooks will verify quality)
+4. Create pull request
+5. Address review feedback
+6. Merge once approved and all checks pass
+
 ## Getting WARC Files
 
 You can obtain WARC files from several sources:
