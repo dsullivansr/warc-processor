@@ -30,18 +30,16 @@ class OutputWriter(ABC):
             ValueError: If output path is invalid.
             PermissionError: If output destination is not writable.
         """
-        pass
 
     @abstractmethod
     def write_record(self, record: ProcessedWarcRecord):
         """Write processed record to output.
 
         Args:
-            record: ProcessedWarcRecord being written. Contains both the original
-                WARC record metadata and the processed content.
+            record: ProcessedWarcRecord being written. Contains both the
+                original WARC record metadata and the processed content.
 
         Raises:
             ValueError: If writer is not configured or record is invalid.
             IOError: If writing fails.
         """
-        pass
