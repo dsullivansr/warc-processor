@@ -13,13 +13,13 @@ class TestProcessingStats(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.stats = ProcessingStats()
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.temp_file.write(b'test content')
-        self.temp_file.close()
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(b'test content')
+            self.temp_file_path = temp_file.name
 
     def tearDown(self):
         """Clean up test fixtures."""
-        os.unlink(self.temp_file.name)
+        os.unlink(self.temp_file_path)
 
     def test_initial_stats(self):
         """Test initial statistics values."""
@@ -69,7 +69,7 @@ class TestProcessingStats(unittest.TestCase):
 
     def test_set_input_size(self):
         """Test setting input size."""
-        self.stats.set_input_size(self.temp_file.name)
+        self.stats.set_input_size(self.temp_file_path)
         summary = self.stats.get_summary()
         self.assertEqual(summary['input_size'], len(b'test content'))
         self.assertGreater(summary['input_size_mb'], 0)
@@ -81,7 +81,7 @@ class TestProcessingStats(unittest.TestCase):
         self.stats.track_parsed_record()
         self.stats.track_skipped_record()
         self.stats.track_failed_record()
-        self.stats.set_input_size(self.temp_file.name)
+        self.stats.set_input_size(self.temp_file_path)
 
         # Reset stats
         self.stats.reset_stats()
