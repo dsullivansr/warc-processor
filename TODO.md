@@ -90,6 +90,18 @@ warc_processor/
 - [ ] Add type hints and runtime checks for interfaces
 - [ ] Consider using Protocol classes for structural typing
 
+## Code TODOs
+
+### Refactoring Opportunities
+- [ ] Consider refactoring WarcRecord to reduce number of instance attributes, possibly by grouping related fields into nested structures
+- [ ] Consider refactoring WarcProcessor to reduce constructor arguments by having WarcProcessor create its own processor_chain from processors
+- [ ] Consider refactoring WarcRecordParser.parse method to reduce number of local variables and complexity
+- [ ] Consider extracting common record creation code from WarcRecordParser into a shared utility (trade-off: increased complexity vs reduced duplication)
+
+### Testing Improvements
+- [ ] Consider refactoring TestWarcProcessor to use a fixture object that encapsulates mock objects and temporary files
+- [ ] Consider creating test_utils.py with common WARC test data (trade-off: test independence vs code duplication)
+
 ## Next Steps
 1. Prioritize these improvements based on:
    - Impact on maintainability
