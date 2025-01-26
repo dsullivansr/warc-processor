@@ -20,7 +20,7 @@ class WarcPath:
         path: The Path object representing the WARC file location.
     """
     path: Path
-    
+
     @classmethod
     def from_str(cls, path_str: str) -> 'WarcPath':
         """Creates a WarcPath from a string path.
@@ -35,14 +35,12 @@ class WarcPath:
             ValueError: If the path doesn't have a .warc or .warc.gz extension.
         """
         path = Path(path_str)
-        if not (path.suffix == '.warc' or 
+        if not (path.suffix == '.warc' or
                 (path.suffix == '.gz' and path.stem.endswith('.warc'))):
-            raise ValueError(
-                f"Invalid WARC file extension: {path_str}. "
-                "Must end in .warc or .warc.gz"
-            )
+            raise ValueError(f"Invalid WARC file extension: {path_str}. "
+                             "Must end in .warc or .warc.gz")
         return cls(path)
-    
+
     def __str__(self) -> str:
         return str(self.path)
 
@@ -57,7 +55,7 @@ class OutputPath:
         path: The Path object representing the output location.
     """
     path: Path
-    
+
     @classmethod
     def from_str(cls, path_str: str) -> 'OutputPath':
         """Creates an OutputPath from a string path.
@@ -77,6 +75,6 @@ class OutputPath:
         if not os.access(path.parent, os.W_OK):
             raise ValueError(f"Output directory isn't writable: {path.parent}")
         return cls(path)
-    
+
     def __str__(self) -> str:
         return str(self.path)

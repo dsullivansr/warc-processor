@@ -10,12 +10,7 @@ import sys
 from typing import List, Optional
 
 from html_processor import HtmlProcessor
-from plain_text_writer import PlainTextWriter
-from processing_stats import ProcessingStats
-from warc_processor import WarcProcessor
 from warc_processor_factory import WarcProcessorFactory
-from warc_record_parser import WarcRecordParser
-from warc_record_processor_chain import WarcRecordProcessorChain
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -45,28 +40,18 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
         Processed records are written to an output file in a configurable format.
         """,
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument(
-        'input',
-        help='Input WARC file path'
-    )
-    parser.add_argument(
-        'output',
-        help='Output file path'
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Enable verbose logging'
-    )
-    parser.add_argument(
-        '--parser',
-        choices=['html5lib', 'lxml', 'html.parser'],
-        default='html5lib',
-        help='HTML parser to use'
-    )
+    parser.add_argument('input', help='Input WARC file path')
+    parser.add_argument('output', help='Output file path')
+    parser.add_argument('-v',
+                        '--verbose',
+                        action='store_true',
+                        help='Enable verbose logging')
+    parser.add_argument('--parser',
+                        choices=['html5lib', 'lxml', 'html.parser'],
+                        default='html5lib',
+                        help='HTML parser to use')
 
     if args is None:
         args = sys.argv[1:]
@@ -87,23 +72,24 @@ def main(args: Optional[List[str]] = None):
     log_level = logging.DEBUG if parsed_args.verbose else logging.INFO
     logging.basicConfig(
         level=log_level,
-        format='%(levelname)-8s %(name)s:%(filename)s:%(lineno)d %(message)s'
-    )
+        format='%(levelname)-8s %(name)s:%(filename)s:%(lineno)d %(message)s')
 
     # Create processor chain with specified parser
-    processor = WarcProcessorFactory.create([HtmlProcessor(parser=parsed_args.parser)])
+    processor = WarcProcessorFactory.create(
+        [HtmlProcessor(parser=parsed_args.parser)])
 
     try:
         # Process WARC file
-        stats = processor.process_warc_file(parsed_args.input, parsed_args.output)
+        stats = processor.process_warc_file(parsed_args.input,
+                                            parsed_args.output)
 
         # Print final stats
-        print("\nProcessed %d records" % stats.records_processed)
-        print("Skipped %d records" % stats.records_skipped)
-        print("Failed %d records" % stats.records_failed)
+        print(f"\nProcessed {stats.records_processed} records")
+        print(f"Skipped {stats.records_skipped} records")
+        print(f"Failed {stats.records_failed} records")
 
     except Exception as e:
-        print("Error processing WARC file: %s" % e, file=sys.stderr)
+        print(f"Error processing WARC file: {e}", file=sys.stderr)
         sys.exit(1)
 
 

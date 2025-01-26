@@ -1,16 +1,14 @@
 """HTML processor for WARC records.
 
-This module provides functionality for processing HTML content from WARC records,
-extracting readable text while removing markup and unwanted elements.
+This module provides functionality for extracting text content from HTML docs.
 """
 
 import logging
-import re
 from typing import Optional
 
 from bs4 import BeautifulSoup
 
-from models.warc_record import WarcRecord, ProcessedWarcRecord
+from models.warc_record import WarcRecord
 from warc_record_processor import WarcRecordProcessor
 
 logger = logging.getLogger(__name__)
@@ -76,17 +74,14 @@ class HtmlProcessor(WarcRecordProcessor):
             text = soup.get_text(separator=' ')
 
             # Normalize whitespace
-            text = re.sub(r'\s+', ' ', text)
             text = text.strip()
+            text = ' '.join(text.split())
 
             return text
 
         except Exception as e:
-            logger.error(
-                "Failed to process HTML with parser '%s': %s",
-                self.parser,
-                str(e)
-            )
+            logger.error("Failed to process HTML with parser '%s': %s",
+                         self.parser, str(e))
             raise ValueError(
                 f"Failed to process HTML with parser '{self.parser}': {str(e)}"
             ) from e

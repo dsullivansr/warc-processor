@@ -20,8 +20,6 @@ setup(
     },
     python_requires=">=3.7",
     entry_points={
-        "console_scripts": [
-            "warc-processor=warc_processor_main:main",
-        ],
+        "console_scripts": ["warc-processor=warc_processor_main:main",],
     },
 )

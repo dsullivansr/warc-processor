@@ -26,12 +26,12 @@ class PlainTextWriter(OutputWriter):
     [processed content]
     
     """
-    
+
     def __init__(self):
         """Initialize the plain text writer."""
         self.output_path = None
         self._output_file = None
-        
+
     def configure(self, output_path: str):
         """Configure the writer with output path and any other settings.
         
@@ -47,7 +47,7 @@ class PlainTextWriter(OutputWriter):
         if self._output_file:
             self._output_file.close()
             self._output_file = None
-            
+
         # Validate output directory
         output_dir = os.path.dirname(output_path)
         if output_dir and not os.path.exists(output_dir):
@@ -55,10 +55,10 @@ class PlainTextWriter(OutputWriter):
         if not os.access(output_dir, os.W_OK):
             raise PermissionError(
                 f"Output directory is not writable: {output_dir}")
-            
+
         self.output_path = output_path
         self._output_file = open(output_path, 'w', encoding='utf-8')
-        
+
     def write_record(self, record: ProcessedWarcRecord):
         """Write processed record to output.
         
@@ -71,15 +71,16 @@ class PlainTextWriter(OutputWriter):
         """
         if not self.output_path or not self._output_file:
             raise ValueError("Writer is not configured")
-            
-        self._output_file.write(f"WARC-Target-URI: {record.record.target_uri}\n")
+
+        self._output_file.write(
+            f"WARC-Target-URI: {record.record.target_uri}\n")
         self._output_file.write(f"WARC-Date: {record.record.date}\n")
         self._output_file.write(f"Content-Type: {record.record.content_type}\n")
         self._output_file.write("\n")
         self._output_file.write(record.processed_content)
         self._output_file.write("\n\n")
         self._output_file.flush()
-        
+
     def __del__(self):
         """Clean up resources by closing the output file if open."""
         if self._output_file:

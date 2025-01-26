@@ -17,7 +17,7 @@ class WarcRecordProcessor(ABC):
     2. Transforming the record content into a processed form
     3. Handling any errors that occur during processing
     """
-    
+
     @abstractmethod
     def can_process(self, record: WarcRecord) -> bool:
         """Check if this processor can handle the given record.
@@ -28,8 +28,7 @@ class WarcRecordProcessor(ABC):
         Returns:
             True if this processor can handle the record, False otherwise.
         """
-        pass
-        
+
     @abstractmethod
     def process(self, record: WarcRecord) -> str:
         """Process a WARC record.
@@ -43,4 +42,3 @@ class WarcRecordProcessor(ABC):
         Raises:
             ValueError: If record cannot be processed.
         """
-        pass

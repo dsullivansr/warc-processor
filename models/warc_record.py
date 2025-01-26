@@ -52,15 +52,18 @@ class WarcRecord:
             ValueError: If record is missing required fields.
         """
         # Get required fields
-        record_id = WarcRecordId(record.rec_headers.get_header('WARC-Record-ID'))
-        target_uri = WarcUri.from_str(record.rec_headers.get_header('WARC-Target-URI'))
+        record_id = WarcRecordId(
+            record.rec_headers.get_header('WARC-Record-ID'))
+        target_uri = WarcUri.from_str(
+            record.rec_headers.get_header('WARC-Target-URI'))
         date_str = record.rec_headers.get_header('WARC-Date')
         date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
 
         # Get content info
         content_type = None
         if record.http_headers:
-            content_type = ContentType(record.http_headers.get_header('Content-Type', 'text/html'))
+            content_type = ContentType(
+                record.http_headers.get_header('Content-Type', 'text/html'))
         if not content_type:
             content_type = ContentType('text/html')
 
@@ -84,12 +87,14 @@ class WarcRecord:
         # Build optional fields
         payload_digest = None
         if record.rec_headers.get_header('WARC-Payload-Digest'):
-            payload_digest = PayloadDigest(record.rec_headers.get_header('WARC-Payload-Digest'))
+            payload_digest = PayloadDigest(
+                record.rec_headers.get_header('WARC-Payload-Digest'))
 
         # Get concurrent_to
         concurrent_to = None
         if record.rec_headers.get_header('WARC-Concurrent-To'):
-            concurrent_to = WarcRecordId(record.rec_headers.get_header('WARC-Concurrent-To'))
+            concurrent_to = WarcRecordId(
+                record.rec_headers.get_header('WARC-Concurrent-To'))
 
         # Get IP address
         ip_address = record.rec_headers.get_header('WARC-IP-Address') or None
@@ -97,33 +102,33 @@ class WarcRecord:
         # Get payload type
         payload_type = None
         if record.rec_headers.get_header('WARC-Payload-Type'):
-            payload_type = ContentType(record.rec_headers.get_header('WARC-Payload-Type'))
+            payload_type = ContentType(
+                record.rec_headers.get_header('WARC-Payload-Type'))
 
         # Get identified payload type
         identified_payload_type = None
         if record.rec_headers.get_header('WARC-Identified-Payload-Type'):
-            identified_payload_type = ContentType(record.rec_headers.get_header('WARC-Identified-Payload-Type'))
+            identified_payload_type = ContentType(
+                record.rec_headers.get_header('WARC-Identified-Payload-Type'))
 
         # Get truncated
         truncated = record.rec_headers.get_header('WARC-Truncated') or None
 
-        return cls(
-            record_id=record_id,
-            record_type=record.rec_type,
-            target_uri=target_uri,
-            date=date,
-            content_type=content_type,
-            content=content,
-            content_length=len(content),
-            headers=headers,
-            payload_digest=payload_digest,
-            concurrent_to=concurrent_to,
-            ip_address=ip_address,
-            payload_type=payload_type,
-            identified_payload_type=identified_payload_type,
-            truncated=truncated,
-            http_headers=http_headers
-        )
+        return cls(record_id=record_id,
+                   record_type=record.rec_type,
+                   target_uri=target_uri,
+                   date=date,
+                   content_type=content_type,
+                   content=content,
+                   content_length=len(content),
+                   headers=headers,
+                   payload_digest=payload_digest,
+                   concurrent_to=concurrent_to,
+                   ip_address=ip_address,
+                   payload_type=payload_type,
+                   identified_payload_type=identified_payload_type,
+                   truncated=truncated,
+                   http_headers=http_headers)
 
 
 @dataclass
@@ -175,11 +180,9 @@ class ProcessedWarcRecord:
         if metadata is None:
             metadata = {}
 
-        return cls(
-            record=record,
-            processed_content=processed_content,
-            metadata=metadata
-        )
+        return cls(record=record,
+                   processed_content=processed_content,
+                   metadata=metadata)
 
     def __str__(self):
         """Get string representation.
@@ -191,8 +194,7 @@ class ProcessedWarcRecord:
             f"URI: {self.record.target_uri}",
             f"Date: {self.record.date.strftime('%Y-%m-%dT%H:%M:%SZ')}",
             f"Content-Type: {self.record.content_type}",
-            f"Content Length: {len(self.processed_content)}",
-            "",
+            f"Content Length: {len(self.processed_content)}", "",
             self.processed_content
         ]
         return "\n".join(parts)

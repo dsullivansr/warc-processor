@@ -34,10 +34,8 @@ class WarcProcessorFactory:
         output_writer = PlainTextWriter()
 
         # Create and return processor
-        return WarcProcessor(
-            processors=processors,
-            output_writer=output_writer,
-            record_parser=record_parser,
-            stats=stats,
-            processor_chain=processor_chain
-        )
+        return WarcProcessor(processors=processors,
+                             output_writer=output_writer,
+                             record_parser=record_parser,
+                             stats=stats,
+                             processor_chain=processor_chain)

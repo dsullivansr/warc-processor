@@ -6,6 +6,7 @@ internal WarcRecord model.
 
 import logging
 from typing import Optional
+from urllib.error import URLError
 
 from warcio.recordloader import ArcWarcRecord
 from warcio.statusandheaders import StatusAndHeaders
@@ -52,8 +53,10 @@ class WarcRecordParser:
                     return None
 
             # Extract required fields
-            record_id = WarcRecordId(record.rec_headers.get_header('WARC-Record-ID'))
-            target_uri = WarcUri.from_str(record.rec_headers.get_header('WARC-Target-URI'))
+            record_id = WarcRecordId(
+                record.rec_headers.get_header('WARC-Record-ID'))
+            target_uri = WarcUri.from_str(
+                record.rec_headers.get_header('WARC-Target-URI'))
             if not target_uri:
                 logger.debug("Missing required field: WARC-Target-URI")
                 return None
@@ -64,18 +67,20 @@ class WarcRecordParser:
                 return None
 
             # Get content info
-            content_type = ContentType(record.http_headers.get_header('Content-Type', 'text/html'))
+            content_type = ContentType(
+                record.http_headers.get_header('Content-Type', 'text/html'))
             try:
                 stream = record.content_stream()
                 content = stream.read().decode('utf-8', errors='ignore')
-            except Exception as e:
+            except (IOError, UnicodeError) as e:
                 logger.debug("Failed to read content stream: %s", str(e))
                 return None
 
             content_length = len(content)
 
             # Get optional fields
-            payload_digest = record.rec_headers.get_header('WARC-Payload-Digest')
+            payload_digest = record.rec_headers.get_header(
+                'WARC-Payload-Digest')
             if payload_digest:
                 payload_digest = PayloadDigest(payload_digest)
 
@@ -97,6 +102,6 @@ class WarcRecordParser:
                 payload_digest=payload_digest,
             )
 
-        except Exception as e:
+        except (ValueError, URLError, AttributeError) as e:
             logger.debug("Failed to parse record: %s", str(e))
             return None

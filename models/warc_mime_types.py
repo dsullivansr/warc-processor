@@ -1,103 +1,94 @@
-"""MIME type handling and validation.
+"""MIME type handling for WARC records.
 
-This module provides functionality for handling and validating MIME content types
-used in WARC records.
+This module provides functionality for parsing and validating MIME types.
 """
 
 import re
 
-
 # Regular expression for validating MIME types
 MIME_TYPE_PATTERN = re.compile(
-    r'^[a-zA-Z0-9]+/[a-zA-Z0-9+\-_.]+(?:\s*;\s*[a-zA-Z0-9]+=[a-zA-Z0-9\-]+)*$'
-)
+    r'^[a-zA-Z0-9]+/[a-zA-Z0-9+\-_.]+(?:\s*;\s*[a-zA-Z0-9]+=[a-zA-Z0-9\-]+)*$')
 
 
 class ContentTypeError(ValueError):
-    """Raised when a content type is invalid."""
-    pass
+    """Error raised when content type is invalid."""
 
 
 class ContentType:
-    """Represents a validated MIME content type.
-
-    This class ensures that content types follow the standard format:
-    type/subtype[;parameter=value]*.
+    """Represents a MIME content type.
 
     Attributes:
-        raw_type: The original content type string.
-        main_type: The main type (e.g., 'text' in 'text/html').
-        subtype: The subtype (e.g., 'html' in 'text/html').
-        parameters: Optional dictionary of parameters.
+        raw_type: Original content type string
+        main_type: Main type (e.g. 'text' in 'text/html')
+        subtype: Subtype (e.g. 'html' in 'text/html')
+        parameters: Dictionary of parameters
     """
 
     def __init__(self, content_type: str):
-        """Creates a new ContentType instance.
+        """Initialize content type.
 
         Args:
-            content_type: The content type string to validate.
+            content_type: MIME type string (e.g. 'text/html; charset=utf-8')
 
         Raises:
             ContentTypeError: If the content type is invalid.
         """
         if not MIME_TYPE_PATTERN.match(content_type):
-            raise ContentTypeError("Invalid content type format: %s" % content_type)
+            raise ContentTypeError(
+                f"Invalid content type format: {content_type}")
 
         self.raw_type = content_type
         parts = content_type.split(';', 1)
-        type_parts = parts[0].strip().split('/', 1)
+        type_parts = parts[0].strip().split('/')
 
         self.main_type = type_parts[0].lower()
-
-        if len(type_parts) > 1:
-            self.subtype = type_parts[1].lower()
-        else:
-            self.subtype = ''
-
+        self.subtype = type_parts[1].lower()
         self.parameters = {}
 
         if len(parts) > 1:
             for param in parts[1].split(';'):
                 if '=' in param:
-                    key, value = param.split('=', 1)
-                    self.parameters[key.strip().lower()] = value.strip()
+                    key, value = param.strip().split('=', 1)
+                    self.parameters[key.lower()] = value
 
     def __str__(self) -> str:
-        """Returns the raw content type string."""
-        return self.raw_type
+        """Get string representation with parameters."""
+        base = f"{self.main_type}/{self.subtype}"
+        if not self.parameters:
+            return base
+        params = '; '.join(
+            f"{k}={v}" for k, v in sorted(self.parameters.items()))
+        return f"{base}; {params}"
 
-    def __eq__(self, other: object) -> bool:
-        """Checks if two content types are equal.
-
+    def __eq__(self, other) -> bool:
+        """Check equality with another content type.
+        
         Args:
-            other: The object to compare with.
+            other: Object to compare with
 
         Returns:
-            True if the content types have the same main and subtypes.
+            True if main_type and subtype match, ignoring parameters
         """
         if not isinstance(other, ContentType):
             return False
-
         return (self.main_type == other.main_type and
                 self.subtype == other.subtype)
 
     def matches(self, pattern: str) -> bool:
-        """Checks if this content type matches a pattern.
-
-        The pattern can use wildcards, e.g., 'text/*' matches any text type.
+        """Check if content type matches a pattern.
 
         Args:
-            pattern: The pattern to match against.
+            pattern: Pattern to match (e.g. 'text/*', '*/html')
 
         Returns:
-            True if the content type matches the pattern.
+            True if matches, False otherwise
         """
+        if pattern == '*/*':
+            return True
+
         if '/' not in pattern:
             return False
 
-        pattern_main, pattern_sub = pattern.lower().split('/', 1)
-
-        if pattern_main == '*' or pattern_main == self.main_type:
-            if pattern_sub == '*' or pattern_sub == self.subtype:
-                return True
-        return False
+        pattern_main, pattern_sub = pattern.split('/')
+        return (pattern_main in {'*', self.main_type} and
+                pattern_sub in {'*', self.subtype})
