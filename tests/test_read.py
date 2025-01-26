@@ -15,8 +15,14 @@ def read_warc_start(warc_path: str) -> None:
             print(f"Read {len(data)} bytes")
             print("First 100 bytes:")
             print(data[:100])
-    except Exception as e:
-        print(f"Error: {e}")
+    except FileNotFoundError as e:
+        print(f"File not found: {e}")
+    except gzip.BadGzipFile as e:
+        print(f"Invalid gzip file: {e}")
+    except PermissionError as e:
+        print(f"Permission denied: {e}")
+    except OSError as e:
+        print(f"I/O error: {e}")
 
 
 if __name__ == '__main__':
