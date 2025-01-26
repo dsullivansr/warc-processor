@@ -13,6 +13,10 @@ from warc_record_parser import WarcRecordParser
 from warc_record_processor_chain import WarcRecordProcessorChain
 
 
+# TODO(dsullivan): Consider refactoring test class to use a fixture object
+# that encapsulates the mock objects and temporary files. This would reduce
+# the number of instance attributes while making the test setup clearer.
+# pylint: disable=too-many-instance-attributes
 class TestWarcProcessor(unittest.TestCase):
     """Test cases for WarcProcessor."""
 
