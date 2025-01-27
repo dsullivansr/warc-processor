@@ -66,7 +66,7 @@ class WarcRecordId:
 
     def __str__(self) -> str:
         """Returns string representation."""
-        return self.record_id
+        return str(self.record_id)
 
     def __eq__(self, other) -> bool:
         """Checks equality with another record ID."""
