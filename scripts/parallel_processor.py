@@ -11,7 +11,7 @@ from warcio.archiveiterator import ArchiveIterator
 
 from warc_record_parser import WarcRecordParser
 from warc_record_processor_chain import WarcRecordProcessorChain
-from html_processor import HtmlProcessor
+from lexbor_html_processor import LexborHtmlProcessor
 from plain_text_writer import PlainTextWriter
 from models.warc_record import ProcessedWarcRecord
 
@@ -67,7 +67,7 @@ def process_chunk(input_path: str, output_dir: str, chunk: ChunkInfo) -> None:  
     """
     # Create processor components
     record_parser = WarcRecordParser()
-    html_processor = HtmlProcessor()
+    html_processor = LexborHtmlProcessor()
     processors = [html_processor]
     processor_chain = WarcRecordProcessorChain(processors)
     output_writer = PlainTextWriter()
