@@ -2,49 +2,58 @@
 """Profile the WARC processor performance."""
 
 import cProfile
+import os
 import pstats
-from pstats import SortKey
+import sys
+import tempfile
+from datetime import datetime
 
-from warc_processor import WarcProcessor
-from warc_record_parser import WarcRecordParser
-from warc_record_processor_chain import WarcRecordProcessorChain
-from html_processor import HtmlProcessor
-from plain_text_writer import PlainTextWriter
-from processing_stats import ProcessingStats
+from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from warc_processor_factory import WarcProcessorFactory
 
 
-def main():
-    """Run profiling on WARC processor."""
-    # Initialize components
-    record_parser = WarcRecordParser()
-    html_processor = HtmlProcessor()
-    processors = [html_processor]
-    processor_chain = WarcRecordProcessorChain(processors)
-    output_writer = PlainTextWriter()
-    stats = ProcessingStats()
+def profile_processor(warc_path: str):
+    """Profile the WARC processor.
+
+    Args:
+        warc_path: Path to WARC file to process.
+    """
+    # Create temporary output file
+    output_path = tempfile.mktemp()
 
     # Create processor
-    processor = WarcProcessor(processors=processors,
-                              output_writer=output_writer,
-                              record_parser=record_parser,
-                              stats=stats,
-                              processor_chain=processor_chain)
+    processor = WarcProcessorFactory.create([BeautifulSoupHtmlProcessor()])
+
+    print(f"\nProcessing WARC file: {warc_path}")
+    print(f"Output path: {output_path}")
 
     # Profile processing
+    start_time = datetime.now()
     profiler = cProfile.Profile()
     profiler.enable()
 
-    # Process sample file
-    warc_path = ('/data01/commoncrawl/crawl-data/CC-NEWS/2024/12/'
-                 'CC-NEWS-20241231224228-00155.warc.gz')
-    processor.process_warc_file(warc_path, 'test_data/full_output.txt')
+    # Process WARC file
+    processor.process_warc_file(warc_path, output_path)
 
     profiler.disable()
+    processing_time = datetime.now() - start_time
 
-    # Print stats sorted by cumulative time
-    stats = pstats.Stats(profiler).sort_stats(SortKey.CUMULATIVE)
-    stats.print_stats(30)  # Show top 30 entries
+    # Print results
+    print(f"\nProcessing time: {processing_time}")
+
+    # Save profile stats
+    stats = pstats.Stats(profiler)
+    stats.sort_stats('cumulative')
+    stats.print_stats(50)
+
+    # Clean up
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) != 2:
+        print("Usage: python profile_processor.py <warc_file>")
+        sys.exit(1)
+
+    profile_processor(sys.argv[1])

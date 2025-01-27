@@ -1,4 +1,4 @@
-"""HTML processor for WARC records.
+"""HTML processor for WARC records using BeautifulSoup.
 
 This module provides functionality for extracting text content from HTML docs.
 """
@@ -6,7 +6,7 @@ This module provides functionality for extracting text content from HTML docs.
 import logging
 from typing import Optional
 
-from bs4 import BeautifulSoup
+import bs4
 
 from models.warc_record import WarcRecord
 from warc_record_processor import WarcRecordProcessor
@@ -14,8 +14,8 @@ from warc_record_processor import WarcRecordProcessor
 logger = logging.getLogger(__name__)
 
 
-class HtmlProcessor(WarcRecordProcessor):
-    """Processes HTML content from WARC records.
+class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
+    """Processes HTML content from WARC records using BeautifulSoup.
 
     This processor extracts readable text from HTML content by:
     1. Parsing the HTML using BeautifulSoup
@@ -62,26 +62,25 @@ class HtmlProcessor(WarcRecordProcessor):
         Raises:
             ValueError: If HTML parsing fails.
         """
+        # Parse HTML with specified parser
         try:
-            # Parse HTML with specified parser
-            soup = BeautifulSoup(record.content, self.parser)
-
-            # Remove unwanted elements
-            for element in soup(['script', 'style', 'meta', 'link']):
-                element.decompose()
-
-            # Extract text with proper whitespace
-            text = soup.get_text(separator=' ')
-
-            # Normalize whitespace
-            text = text.strip()
-            text = ' '.join(text.split())
-
-            return text
-
+            soup = bs4.BeautifulSoup(record.content, self.parser)
         except Exception as e:
-            logger.error("Failed to process HTML with parser '%s': %s",
+            logger.error("Failed to parse HTML with parser '%s': %s",
                          self.parser, str(e))
             raise ValueError(
-                f"Failed to process HTML with parser '{self.parser}': {str(e)}"
+                f"Failed to parse HTML with parser '{self.parser}': {str(e)}"
             ) from e
+
+        # Remove unwanted elements
+        for element in soup(['script', 'style', 'meta', 'link']):
+            element.decompose()
+
+        # Extract text with proper whitespace
+        text = soup.get_text(separator=' ')
+
+        # Normalize whitespace
+        text = text.strip()
+        text = ' '.join(text.split())
+
+        return text

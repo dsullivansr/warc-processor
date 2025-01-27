@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from html_processor import HtmlProcessor
+from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from output_writer import OutputWriter
 from plain_text_writer import PlainTextWriter
 from processing_stats import ProcessingStats
@@ -13,22 +13,26 @@ from warc_record_processor_chain import WarcRecordProcessorChain
 
 
 class WarcProcessorFactory:
-    """Factory for creating WARC processors with standard components."""
+    """Factory for creating WARC processors.
+
+    This factory provides methods for creating and configuring WARC processors
+    with different record processors and output writers.
+    """
 
     @staticmethod
-    def create(processors: List[WarcRecordProcessor] = None,
+    def create(processors: Optional[List[WarcRecordProcessor]] = None,
                output_writer: Optional[OutputWriter] = None) -> WarcProcessor:
         """Create a new WARC processor with default components.
 
         Args:
-            processors: List of processors to use, defaults to [HtmlProcessor()]
-            output_writer: Optional writer to use, defaults to PlainTextWriter()
+            processors: List of processors to use
+            output_writer: Optional writer to use
 
         Returns:
             Configured WarcProcessor instance.
         """
         if not processors:
-            processors = [HtmlProcessor()]
+            processors = [BeautifulSoupHtmlProcessor()]
 
         # Create all required components
         processor_chain = WarcRecordProcessorChain(processors)

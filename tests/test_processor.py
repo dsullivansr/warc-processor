@@ -3,7 +3,7 @@
 import os
 import sys
 import logging
-from html_processor import HtmlProcessor
+from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from plain_text_writer import PlainTextWriter
 from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
@@ -40,7 +40,7 @@ def main() -> None:
                                os.path.basename(warc_path) + '.processed.txt')
 
     # Create processor components
-    html_processor = HtmlProcessor()
+    html_processor = BeautifulSoupHtmlProcessor()
     output_writer = PlainTextWriter()
     record_parser = WarcRecordParser()
     stats = ProcessingStats()

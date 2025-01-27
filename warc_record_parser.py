@@ -81,7 +81,6 @@ class WarcRecordParser:
                 http_headers.get_header('Content-Type', default_type))
             stream = record.content_stream()
             content = stream.read().decode('utf-8', errors='ignore')
-            content_length = len(content)
 
             # Get optional fields
             payload_digest = headers.get_header('WARC-Payload-Digest')
@@ -95,17 +94,14 @@ class WarcRecordParser:
                     response_headers[name] = value
 
             # Build and return record
-            return WarcRecord(
-                record_id=record_id,
-                record_type=record.rec_type,
-                target_uri=target_uri,
-                date=date,
-                content_type=content_type,
-                content=content,
-                content_length=content_length,
-                headers=response_headers,
-                payload_digest=payload_digest,
-            )
+            return WarcRecord(record_id=record_id,
+                              record_type=record.rec_type,
+                              target_uri=target_uri,
+                              date=date,
+                              content_type=content_type,
+                              content=content,
+                              headers=response_headers,
+                              payload_digest=payload_digest)
 
         except (
                 ValueError,

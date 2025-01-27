@@ -1,32 +1,33 @@
-"""Functional tests for WARC processor."""
+"""Functional tests using real WARC files."""
 
 import os
 import tempfile
 from datetime import datetime
 from unittest import TestCase
 
-from html_processor import HtmlProcessor
+from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from plain_text_writer import PlainTextWriter
 from warc_processor_factory import WarcProcessorFactory
 
 
 class TestRealWarc(TestCase):
-    """Tests for processing real WARC files."""
+    """Test processing real WARC files."""
 
     def setUp(self):
-        """Set up test fixtures."""
+        """Set up test cases."""
         # Create a temporary file path but don't open it yet
         with tempfile.NamedTemporaryFile(delete=False) as temp:
             self.output_path = temp.name
 
     def tearDown(self):
-        """Clean up test fixtures."""
+        """Clean up after tests."""
         if hasattr(self, 'output_path') and os.path.exists(self.output_path):
             os.unlink(self.output_path)
 
-    def test_process_cc_news(self):
-        """Tests processing a real Common Crawl News WARC file."""
-        warc_path = os.path.join(os.path.dirname(__file__), "..", "tests",
-                                 "fixtures", "sample_recompressed.warc.gz")
+    def test_process_sample_warc(self):
+        """Tests processing a sample WARC file with plaintext output."""
+        warc_path = os.path.join(os.path.dirname(__file__), "..", "test_data",
+                                 "sample.warc.gz")
 
         # Skip test if WARC file doesn't exist
         if not os.path.exists(warc_path):
@@ -38,18 +39,40 @@ class TestRealWarc(TestCase):
 
         # Process WARC file
         start_time = datetime.now()
-        processor = WarcProcessorFactory.create([HtmlProcessor()])
+        output_writer = PlainTextWriter()
+        processor = WarcProcessorFactory.create([BeautifulSoupHtmlProcessor()],
+                                                output_writer=output_writer)
         stats = processor.process_warc_file(warc_path, self.output_path)
         processing_time = datetime.now() - start_time
 
         # Basic validation
         self.assertTrue(os.path.exists(self.output_path))
 
-        # Print debug info
-        print(f"\nOutput file path: {self.output_path}")
-        print("\nOutput file contents:")
+        # Verify WARC format in output
         with open(self.output_path, 'r', encoding='utf-8') as f:
-            print(f.read())
+            content = f.read()
+
+            # Basic WARC format checks
+            self.assertTrue(content.startswith('WARC/1.0\n'))
+            self.assertTrue('WARC/1.0' in content)
+
+            # Required WARC headers should be present
+            self.assertIn('WARC-Type:', content)
+            self.assertIn('WARC-Record-ID:', content)
+            self.assertIn('WARC-Date:', content)
+            self.assertIn('WARC-Target-URI:', content)
+            self.assertIn('Content-Type:', content)
+
+            # Should have blank line between headers and content
+            self.assertIn('\n\n', content)
+
+            # Content should be plaintext (no HTML tags)
+            self.assertNotIn('<html', content.lower())
+            self.assertNotIn('<body', content.lower())
+            self.assertNotIn('</html>', content.lower())
+
+            print("\nOutput file contents:")
+            print(content)
 
         # Validate stats
         self.assertGreater(stats.records_parsed, 0)

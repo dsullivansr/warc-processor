@@ -97,6 +97,8 @@ warc_processor/
 - [ ] Consider refactoring WarcProcessor to reduce constructor arguments by having WarcProcessor create its own processor_chain from processors
 - [ ] Consider refactoring WarcRecordParser.parse method to reduce number of local variables and complexity
 - [ ] Consider extracting common record creation code from WarcRecordParser into a shared utility (trade-off: increased complexity vs reduced duplication)
+- [ ] Consider moving common WARC record creation code into a shared utility.
+- [ ] HTML Processor should be BeautifulSoupHtmlProcessor (or similar)
 
 ### Testing Improvements
 - [ ] Consider refactoring TestWarcProcessor to use a fixture object that encapsulates mock objects and temporary files

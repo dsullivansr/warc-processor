@@ -1,65 +1,80 @@
-"""Tests for the WarcProcessorMain module."""
+"""Tests for WARC processor main script."""
 
 import os
-import shutil
 import tempfile
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from warc_processor_main import main
 
 
-# pylint: disable=duplicate-code
 class TestWarcProcessorMain(unittest.TestCase):
-    """Test cases for WarcProcessorMain."""
+    """Test cases for WARC processor main script."""
 
     def setUp(self):
-        """Set up test fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.warc_path = os.path.join(self.temp_dir, 'test.warc')
-        self.output_path = os.path.join(self.temp_dir, 'output.txt')
+        """Set up test cases."""
+        # Create temporary files
+        self.input_file = tempfile.mktemp()
+        self.output_file = tempfile.mktemp()
+
+        # Create a test WARC file
+        with open(self.input_file, 'w', encoding='utf-8') as f:
+            f.write('WARC/1.0\r\n')
+            f.write('WARC-Type: response\r\n')
+            f.write('WARC-Record-ID: <urn:uuid:12345678>\r\n')
+            f.write('WARC-Date: 2025-01-27T01:00:45Z\r\n')
+            f.write('WARC-Target-URI: http://example.com\r\n')
+            f.write('Content-Length: 200\r\n')
+            f.write('\r\n')
+            f.write('HTTP/1.1 200 OK\r\n')
+            f.write('Content-Type: text/html\r\n')
+            f.write('Content-Length: 31\r\n')
+            f.write('\r\n')
+            f.write('<html><body>test</body></html>\r\n')
 
     def tearDown(self):
-        """Clean up test fixtures."""
-        shutil.rmtree(self.temp_dir)
+        """Clean up after tests."""
+        # Remove temporary files
+        for path in [self.input_file, self.output_file]:
+            if os.path.exists(path):
+                os.remove(path)
 
-    def create_test_warc(self):
-        """Create a test WARC file."""
-        warc_content = (b'WARC/1.0\r\n'
-                        b'WARC-Type: response\r\n'
-                        b'WARC-Date: 2025-01-24T12:34:56Z\r\n'
-                        b'WARC-Record-ID: <urn:uuid:test-id>\r\n'
-                        b'Content-Length: 100\r\n'
-                        b'Content-Type: text/html\r\n'
-                        b'WARC-Target-URI: http://example.com\r\n'
-                        b'\r\n'
-                        b'test content')
+    def test_main_with_valid_file(self):
+        """Test main with valid WARC file."""
+        with patch('sys.argv', [
+                'warc_processor_main.py', self.input_file, '--output',
+                self.output_file
+        ]):
+            exit_code = main()
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(os.path.exists(self.output_file))
+            self.assertGreater(os.path.getsize(self.output_file), 0)
 
-        with open(self.warc_path, 'wb') as f:
-            f.write(warc_content)
+    def test_main_with_invalid_file(self):
+        """Test main with invalid WARC file."""
+        with patch('sys.argv', [
+                'warc_processor_main.py', 'nonexistent.warc', '--output',
+                self.output_file
+        ]):
+            exit_code = main()
+            self.assertEqual(exit_code, 1)
 
-    def test_main_no_args(self):
-        """Tests main with no arguments."""
-        with patch('sys.argv', ['warc_processor_main.py']):
-            with self.assertRaises(SystemExit):
-                main()
-
-    def test_main_with_args(self):
-        """Tests main with valid arguments."""
-        self.create_test_warc()
-
-        mock_html_processor = MagicMock()
-        mock_html_processor.can_process.return_value = True
-        mock_html_processor.process.return_value = 'processed content'
-
-        with patch(
-                'sys.argv',
-            ['warc_processor_main.py', self.warc_path, self.output_path]):
-            with patch('html_processor.HtmlProcessor',
-                       return_value=mock_html_processor):
-                main()
-
-        self.assertTrue(os.path.exists(self.output_path))
+    def test_main_with_parser_option(self):
+        """Test main with parser option."""
+        args = [
+            'warc_processor_main.py', self.input_file, '--output',
+            self.output_file, '--parser', 'html.parser'
+        ]
+        with patch('sys.argv', args):
+            with patch('warc_processor_factory.WarcProcessorFactory.create'
+                      ) as mock_create:
+                exit_code = main()
+                self.assertEqual(exit_code, 0)
+                mock_create.assert_called_once()
+                processor = mock_create.call_args[0][0][0]
+                self.assertIsInstance(processor, BeautifulSoupHtmlProcessor)
+                self.assertEqual(processor.parser, 'html.parser')
 
 
 if __name__ == '__main__':
