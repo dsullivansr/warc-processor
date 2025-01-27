@@ -1,7 +1,7 @@
 """Plain text writer implementation.
 
 This module provides a concrete implementation of the OutputWriter interface
-that writes processed WARC records to a plain text file in a simple format.
+that writes processed WARC records to a plain text file in WARC format.
 """
 
 import logging
@@ -14,17 +14,26 @@ logger = logging.getLogger(__name__)
 
 
 class PlainTextWriter(OutputWriter):
-    """Writes processed records to a plain text file.
+    """Writes processed records to a plain text file in WARC format.
     
-    This writer creates a text file containing the processed WARC records, with
-    each record's metadata and content separated by newlines. The format is:
+    This writer creates a text file containing the processed WARC records,
+    preserving all original WARC fields and format, with the only difference
+    being that the HTML content is replaced with plaintext. The format follows
+    the WARC specification:
     
-    WARC-Target-URI: [uri]
+    WARC/1.0
+    WARC-Type: [type]
+    WARC-Record-ID: [id]
     WARC-Date: [date]
+    WARC-Target-URI: [uri]
     Content-Type: [type]
+    Content-Length: [length]
+    WARC-Payload-Digest: [digest]
+    [additional headers...]
     
     [processed content]
     
+    WARC/1.0
     """
 
     def __init__(self):
@@ -70,9 +79,39 @@ class PlainTextWriter(OutputWriter):
             raise ValueError("Writer is not configured")
 
         with open(self.output_path, 'a', encoding='utf-8') as f:
-            f.write(f"WARC-Target-URI: {record.record.target_uri}\n")
+            # Write WARC version
+            f.write("WARC/1.0\n")
+
+            # Write all WARC headers
+            f.write(f"WARC-Type: {record.record.record_type}\n")
+            f.write(f"WARC-Record-ID: {record.record.record_id}\n")
             f.write(f"WARC-Date: {record.record.date_str}\n")
+            f.write(f"WARC-Target-URI: {record.record.target_uri}\n")
             f.write(f"Content-Type: {record.record.content_type}\n")
+
+            # Write payload digest if present
+            if record.record.payload_digest:
+                f.write(
+                    f"WARC-Payload-Digest: {record.record.payload_digest}\n")
+
+            # Write any additional headers from the original record
+            for key, value in record.record.headers.items():
+                # Skip headers we've already written
+                if not key.lower() in [
+                        'warc-type', 'warc-record-id', 'warc-date',
+                        'warc-target-uri', 'content-type', 'warc-payload-digest'
+                ]:
+                    f.write(f"{key}: {value}\n")
+
+            # Add content length header for the processed content
+            content_length = len(record.processed_content.encode('utf-8'))
+            f.write(f"Content-Length: {content_length}\n")
+
+            # Add blank line before content as per WARC spec
             f.write("\n")
+
+            # Write the processed plaintext content
             f.write(record.processed_content)
-            f.write("\n\n")
+
+            # Add record delimiter as per WARC spec
+            f.write("\n\nWARC/1.0\n\n")
