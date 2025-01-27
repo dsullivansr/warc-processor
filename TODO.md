@@ -90,6 +90,40 @@ warc_processor/
 - [ ] Add type hints and runtime checks for interfaces
 - [ ] Consider using Protocol classes for structural typing
 
+## Test Coverage Improvements
+
+Current overall test coverage: 86%
+
+### High Priority
+
+1. `processing_stats.py` (68% coverage)
+   - Add tests for error tracking methods
+   - Add tests for utility methods
+   - Missing coverage in lines: 60, 65, 95, 122, 133-137, 145-171
+
+2. `warc_processor_main.py` (67% coverage)
+   - Add tests for directory processing functionality
+   - Add tests for error handling paths
+   - Missing coverage in lines: 68-73, 77-82, 86
+
+3. `tests/test_processor.py` (28% coverage)
+   - Major overhaul needed
+   - Add tests for lines 25-75, 84-89, 94
+   - Consider splitting into multiple test files if needed
+
+### Medium Priority
+
+4. `lexbor_html_processor.py` (84% coverage)
+   - Add tests for error handling paths
+   - Missing coverage in lines: 30, 59, 102-108
+
+### Low Priority
+
+5. Clean up unused test files
+   - `tests/test_read.py` (17% coverage)
+   - `tests/test_warcio.py` (17% coverage)
+   - Consider removing if no longer needed
+
 ## Code TODOs
 
 ### Refactoring Opportunities
