@@ -1,7 +1,7 @@
 """WARC record processor interface.
 
-This module defines the interface for processors that can transform WARC records
-into processed content.
+This module defines the interface for processors that can transform WARC
+records into processed content.
 """
 
 from abc import ABC, abstractmethod
