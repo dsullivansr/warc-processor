@@ -35,7 +35,14 @@ ENV/
 htmlcov/
 .pytest_cache/
 
+# Profiling data
+profiling/
+
+# Test outputs
+test_data/
+
 # Project specific
 *.warc
 *.warc.gz
 output.txt
+create_sample.py
