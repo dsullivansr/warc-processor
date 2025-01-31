@@ -2,7 +2,7 @@
 
 import unittest
 
-from lexbor_html_processor import LexborHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 from models.warc_mime_types import ContentType
 from warc_record_processor import ProcessorInput
 
