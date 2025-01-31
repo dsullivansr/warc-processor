@@ -1,44 +1,57 @@
 """WARC record processor interface.
 
-This module defines the interface for processors that can transform WARC
-records into processed content.
+This module defines the interface for processors that can transform content
+from WARC records into processed form.
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
-from models.warc_record import WarcRecord
+from models.warc_mime_types import ContentType
+
+
+@dataclass
+class ProcessorInput:
+    """Input for content processing.
+    
+    Attributes:
+        content: Raw content to process
+        content_type: Type of the content
+    """
+    content: str
+    content_type: ContentType
 
 
 class WarcRecordProcessor(ABC):
-    """Interface for processors that can transform WARC records.
+    """Interface for processors that can transform content.
     
     Processors implementing this interface are responsible for:
-    1. Determining if they can handle a given record type
-    2. Transforming the record content into a processed form
+    1. Determining if they can handle a given content type
+    2. Transforming the content into a processed form
     3. Handling any errors that occur during processing
     """
 
     @abstractmethod
-    def can_process(self, record: WarcRecord) -> bool:
-        """Check if this processor can handle the given record.
+    def can_process(self, content_type: ContentType) -> bool:
+        """Check if this processor can handle the content type.
         
         Args:
-            record: WARC record to check.
+            content_type: Type of content to check.
             
         Returns:
-            True if this processor can handle the record, False otherwise.
+            True if this processor can handle the content type, False otherwise.
         """
 
     @abstractmethod
-    def process(self, record: WarcRecord) -> str:
-        """Process a WARC record.
+    def process(self, processor_input: ProcessorInput) -> str:
+        """Process content.
         
         Args:
-            record: WARC record to process.
+            processor_input: Input to process
             
         Returns:
             Processed content as a string.
             
         Raises:
-            ValueError: If record cannot be processed.
+            ValueError: If content cannot be processed.
         """

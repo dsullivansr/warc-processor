@@ -1,49 +1,54 @@
 """Factory for creating WARC processors."""
 
-from typing import List, Optional
-
 from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from output_writer import OutputWriter
-from plain_text_writer import PlainTextWriter
+from lexbor_html_processor import LexborHtmlProcessor
 from processing_stats import ProcessingStats
+from plain_text_writer import PlainTextWriter
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
-from warc_record_processor import WarcRecordProcessor
-from warc_record_processor_chain import WarcRecordProcessorChain
 
 
 class WarcProcessorFactory:
-    """Factory for creating WARC processors.
-
-    This factory provides methods for creating and configuring WARC processors
-    with different record processors and output writers.
-    """
+    """Factory for creating WarcProcessor instances."""
 
     @staticmethod
-    def create(processors: Optional[List[WarcRecordProcessor]] = None,
-               output_writer: Optional[OutputWriter] = None) -> WarcProcessor:
+    def create(processors=None, output_writer=None) -> WarcProcessor:
         """Create a new WARC processor with default components.
 
         Args:
-            processors: List of processors to use
-            output_writer: Optional writer to use
+            processors: List of record processors to use
+            output_writer: Output writer to use
 
         Returns:
-            Configured WarcProcessor instance.
+            WarcProcessor instance
         """
-        if not processors:
+        if processors is None:
             processors = [BeautifulSoupHtmlProcessor()]
 
         # Create all required components
-        processor_chain = WarcRecordProcessorChain(processors)
         record_parser = WarcRecordParser()
         stats = ProcessingStats()
         if output_writer is None:
             output_writer = PlainTextWriter()
 
-        # Create and return processor
         return WarcProcessor(processors=processors,
                              output_writer=output_writer,
                              record_parser=record_parser,
-                             stats=stats,
-                             processor_chain=processor_chain)
+                             stats=stats)
+
+    def create_processor(self) -> WarcProcessor:
+        """Create a new WarcProcessor instance.
+
+        Returns:
+            WarcProcessor instance
+        """
+        output_writer = PlainTextWriter()
+        record_parser = WarcRecordParser()
+        stats = ProcessingStats()
+
+        return WarcProcessor(
+            processors=[BeautifulSoupHtmlProcessor(),
+                        LexborHtmlProcessor()],
+            output_writer=output_writer,
+            record_parser=record_parser,
+            stats=stats)

@@ -1,21 +1,17 @@
-"""HTML processor for WARC records using BeautifulSoup.
-
-This module provides functionality for extracting text content from HTML docs.
-"""
+"""BeautifulSoup HTML processor implementation."""
 
 import logging
-from typing import Optional
 
 import bs4
 
-from models.warc_record import WarcRecord
-from warc_record_processor import WarcRecordProcessor
+from models.warc_mime_types import ContentType
+from warc_record_processor import ProcessorInput, WarcRecordProcessor
 
 logger = logging.getLogger(__name__)
 
 
 class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
-    """Processes HTML content from WARC records using BeautifulSoup.
+    """Processes HTML content using BeautifulSoup.
 
     This processor extracts readable text from HTML content by:
     1. Parsing the HTML using BeautifulSoup
@@ -35,52 +31,55 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
         self.parser = parser
         super().__init__()
 
-    def can_process(self, record: WarcRecord) -> bool:
-        """Check if this processor can handle the record.
+    def can_process(self, content_type: ContentType) -> bool:
+        """Check if this processor can handle the content type.
+
+        This processor handles both HTML (text/html) and XHTML.
+        For standard HTML content, consider using LexborHtmlProcessor.
 
         Args:
-            record: WARC record to check.
+            content_type: Type of content to check.
 
         Returns:
-            True if record contains HTML content, False otherwise.
+            True if content is HTML or XHTML, False otherwise.
         """
-        if not record.content_type:
+        if not content_type:
             return False
 
-        content_type = str(record.content_type).lower()
-        return 'html' in content_type or 'xhtml' in content_type
+        # Handle both text/html and application/xhtml+xml
+        if content_type.main_type == 'text' and content_type.subtype == 'html':
+            return True
+        if (content_type.main_type == 'application' and
+                content_type.subtype == 'xhtml+xml'):
+            return True
 
-    def process(self, record: WarcRecord) -> Optional[str]:
-        """Process HTML content from a WARC record.
+        return False
+
+    def process(self, processor_input: ProcessorInput) -> str:
+        """Process HTML content using BeautifulSoup.
 
         Args:
-            record: WARC record containing HTML content.
+            processor_input: Input to process
 
         Returns:
-            Extracted text content with normalized whitespace.
+            Extracted text content
 
         Raises:
-            ValueError: If HTML parsing fails.
+            ValueError: If content is empty or whitespace
         """
-        # Parse HTML with specified parser
+        if not processor_input.content or processor_input.content.isspace():
+            raise ValueError("Content cannot be empty or whitespace")
+
         try:
-            soup = bs4.BeautifulSoup(record.content, self.parser)
+            soup = bs4.BeautifulSoup(processor_input.content, 'html.parser')
+
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+
+            # Extract text with preserved whitespace
+            text = ' '.join(line.strip() for line in soup.stripped_strings)
+
+            return text
         except Exception as e:
-            logger.error("Failed to parse HTML with parser '%s': %s",
-                         self.parser, str(e))
-            raise ValueError(
-                f"Failed to parse HTML with parser '{self.parser}': {str(e)}"
-            ) from e
-
-        # Remove unwanted elements
-        for element in soup(['script', 'style', 'meta', 'link']):
-            element.decompose()
-
-        # Extract text with proper whitespace
-        text = soup.get_text(separator=' ')
-
-        # Normalize whitespace
-        text = text.strip()
-        text = ' '.join(text.split())
-
-        return text
+            raise ValueError(f'HTML processing failed: {str(e)}') from e

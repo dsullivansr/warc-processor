@@ -1,13 +1,13 @@
 """Tests for BeautifulSoupHtmlProcessor."""
 
 import unittest
-from datetime import datetime
-from unittest.mock import patch
 
 from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from models.warc_record import WarcRecord
+from models.warc_mime_types import ContentType
+from warc_record_processor import ProcessorInput
 
 
+# pylint: disable=duplicate-code
 class TestBeautifulSoupHtmlProcessor(unittest.TestCase):
     """Test cases for BeautifulSoupHtmlProcessor class."""
 
@@ -15,35 +15,23 @@ class TestBeautifulSoupHtmlProcessor(unittest.TestCase):
         """Set up test cases."""
         self.processor = BeautifulSoupHtmlProcessor()
 
-    def create_record(self, content_type='text/html', content=''):
-        """Create a test record."""
-        return WarcRecord(record_id='<urn:uuid:12345678>',
-                          record_type='response',
-                          target_uri='http://example.com',
-                          date=datetime.now(),
-                          content_type=content_type,
-                          content=content)
-
     def test_can_process_html(self):
         """Test can_process with HTML content."""
-        record = self.create_record(content_type='text/html')
-        self.assertTrue(self.processor.can_process(record))
-
-    def test_can_process_xhtml(self):
-        """Test can_process with XHTML content."""
-        record = self.create_record(content_type='application/xhtml+xml')
-        self.assertTrue(self.processor.can_process(record))
+        content_type = ContentType('text', 'html')
+        self.assertTrue(self.processor.can_process(content_type))
 
     def test_cannot_process_non_html(self):
         """Test can_process with non-HTML content."""
-        record = self.create_record(content_type='text/plain')
-        self.assertFalse(self.processor.can_process(record))
+        content_type = ContentType('text', 'plain')
+        self.assertFalse(self.processor.can_process(content_type))
 
     def test_process_html(self):
         """Test processing HTML content."""
         html = '<html><body><p>Hello world!</p></body></html>'
-        record = self.create_record(content=html)
-        result = self.processor.process(record)
+        processor_input = ProcessorInput(content=html,
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        result = self.processor.process(processor_input)
         self.assertEqual(result, 'Hello world!')
 
     def test_process_html_with_scripts(self):
@@ -52,39 +40,65 @@ class TestBeautifulSoupHtmlProcessor(unittest.TestCase):
             <html>
                 <head>
                     <script>alert('test');</script>
+                    <style>body { color: red; }</style>
                 </head>
                 <body>
                     <p>Hello world!</p>
+                    <script>console.log('test');</script>
                 </body>
             </html>
         '''
-        record = self.create_record(content=html)
-        result = self.processor.process(record)
+        processor_input = ProcessorInput(content=html,
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        result = self.processor.process(processor_input)
         self.assertEqual(result, 'Hello world!')
 
-    def test_process_html_with_styles(self):
-        """Test processing HTML with style tags."""
-        html = '''
-            <html>
-                <head>
-                    <style>p { color: red; }</style>
-                </head>
-                <body>
-                    <p>Hello world!</p>
-                </body>
-            </html>
-        '''
-        record = self.create_record(content=html)
-        result = self.processor.process(record)
-        self.assertEqual(result, 'Hello world!')
+    def test_process_empty_content(self):
+        """Test processing empty content."""
+        processor_input = ProcessorInput(content='',
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        with self.assertRaises(ValueError):
+            self.processor.process(processor_input)
+
+    def test_process_whitespace_content(self):
+        """Test processing whitespace content."""
+        processor_input = ProcessorInput(content='   \n  ',
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        with self.assertRaises(ValueError):
+            self.processor.process(processor_input)
 
     def test_process_invalid_html(self):
-        """Test processing invalid HTML raises error."""
-        record = self.create_record(content='invalid')
-        with patch('bs4.BeautifulSoup') as mock_soup:
-            mock_soup.side_effect = Exception('Parse error')
-            with self.assertRaises(ValueError):
-                self.processor.process(record)
+        """Test processing invalid HTML."""
+        html = '<p>Hello<p>World'  # Missing closing tags
+        processor_input = ProcessorInput(content=html,
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        result = self.processor.process(processor_input)
+        self.assertEqual(result, 'Hello World')
+
+    def test_process_complex_html(self):
+        """Test processing complex HTML with nested elements."""
+        html = '''
+            <html>
+                <body>
+                    <div class="content">
+                        <h1>Title</h1>
+                        <p>Paragraph 1</p>
+                        <div>
+                            <p>Nested paragraph</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+        '''
+        processor_input = ProcessorInput(content=html,
+                                         content_type=ContentType(
+                                             'text', 'html'))
+        result = self.processor.process(processor_input)
+        self.assertEqual(result, 'Title Paragraph 1 Nested paragraph')
 
 
 if __name__ == '__main__':

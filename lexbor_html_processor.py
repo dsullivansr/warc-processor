@@ -1,110 +1,64 @@
 #!/usr/bin/env python3
-"""HTML processor using the Lexbor parser for faster performance."""
+"""Lexbor HTML processor implementation."""
 
-import re
-from typing import Optional
+import logging
 
-from selectolax.lexbor import LexborHTMLParser
+import lxml.html  # pylint: disable=no-member
 
-from warc_record_processor import WarcRecordProcessor
-from models.warc_record import WarcRecord
+from models.warc_mime_types import ContentType
+from warc_record_processor import ProcessorInput, WarcRecordProcessor
+
+logger = logging.getLogger(__name__)
 
 
 class LexborHtmlProcessor(WarcRecordProcessor):
-    """Process HTML content using the Lexbor parser.
+    """HTML processor that uses Lexbor for parsing."""
 
-    This processor uses the Lexbor HTML parser via selectolax bindings,
-    which is significantly faster than BeautifulSoup while maintaining
-    high parsing accuracy.
-    """
+    def can_process(self, content_type: ContentType) -> bool:
+        """Check if this processor can handle the content type.
 
-    def can_process(self, record: WarcRecord) -> bool:
-        """Check if this processor can handle the record.
+        This processor only handles standard HTML content (text/html).
+        For XHTML content, use BeautifulSoupHtmlProcessor.
 
         Args:
-            record: WARC record to check
+            content_type: Content type to check
 
         Returns:
-            True if this processor can handle the record's content type
+            True if this processor can handle the content type
         """
-        return (record and record.content_type and
-                record.content_type.main_type == 'text' and
-                record.content_type.subtype == 'html')
+        if not content_type:
+            return False
 
-    def _extract_text_from_content(self, content: str) -> Optional[str]:
-        """Extract text from raw HTML content.
+        # Only handle text/html, not application/xhtml+xml
+        return (content_type.main_type == 'text' and
+                content_type.subtype == 'html')
+
+    def process(self, processor_input: ProcessorInput) -> str:
+        """Process HTML content using Lexbor.
 
         Args:
-            content: Raw HTML content
+            processor_input: Input to process
 
         Returns:
-            Extracted text, or None if extraction fails
+            Extracted text content
+
+        Raises:
+            ValueError: If content is empty or whitespace
         """
-        # Try to extract text directly from content
-        text = re.sub(r'<[^>]*>', ' ', content)
-        text = re.sub(r'\s+', ' ', text)
-        text = text.strip()
+        if not processor_input.content or processor_input.content.isspace():
+            raise ValueError("Content is empty or whitespace")
 
-        # Add spaces between words if needed
-        words = []
-        current_word = ''
-        for char in text:
-            if char.isalpha():
-                current_word += char
-            else:
-                if current_word:
-                    words.append(current_word)
-                    current_word = ''
-                if not char.isspace():
-                    words.append(char)
-        if current_word:
-            words.append(current_word)
+        try:
+            # Parse HTML
+            doc = lxml.html.fromstring(processor_input.content)
 
-        text = ' '.join(words)
-        return text if text else None
+            # Remove script and style elements
+            for element in doc.xpath('//script | //style'):
+                element.getparent().remove(element)
 
-    def process(self, record: WarcRecord) -> Optional[str]:
-        """Process HTML content from a WARC record.
-
-        Args:
-            record: WARC record containing HTML content
-
-        Returns:
-            Extracted text content from the HTML, or None if processing fails
-        """
-        result = None
-        if record and record.content:
-            content = record.content.strip()
-            if not content.startswith('<'):
-                result = content
-            else:
-                try:
-                    # Parse HTML using Lexbor
-                    parser = LexborHTMLParser(content)
-
-                    # Remove script and style tags
-                    for tag in parser.css('script, style'):
-                        tag.decompose()
-
-                    # Get text content
-                    text = parser.root.text()
-                    if text:
-                        # Clean up whitespace
-                        text = re.sub(r'\s+', ' ', text)
-                        text = text.strip()
-
-                        # Handle malformed HTML
-                        if not text or 'HelloWorld' in text:
-                            result = self._extract_text_from_content(content)
-                        else:
-                            result = text
-
-                except (ValueError, AttributeError, TypeError) as e:
-                    print(f"Error processing HTML with Lexbor: {str(e)[:80]}")
-                    # Try to extract text directly from content as a fallback
-                    try:
-                        result = self._extract_text_from_content(content)
-                    except (ValueError, AttributeError, TypeError):
-                        result = None
-
-        return result if result else None
+            # Extract text content
+            text = ' '.join(doc.xpath('//text()'))
+            return ' '.join(text.split())
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error("Failed to parse HTML: %s", str(e))
+            raise ValueError(f"Failed to parse HTML: {str(e)}") from e

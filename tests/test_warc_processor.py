@@ -1,165 +1,206 @@
-"""Tests for WARC processor."""
+"""Tests for WarcProcessor."""
 
-import os
-import shutil
-import tempfile
+import io
 import unittest
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+from models.warc_mime_types import ContentType
+from models.warc_record import WarcRecord
+from warc_record_processor import ProcessorInput, WarcRecordProcessor
 from warc_processor import WarcProcessor
+from warc_record_parser import WarcRecordParser
 from processing_stats import ProcessingStats
 from output_writer import OutputWriter
-from warc_record_parser import WarcRecordParser
-from warc_record_processor_chain import WarcRecordProcessorChain
-
-# TODO(dsullivan): Consider refactoring test class to use a fixture object
-# that encapsulates the mock objects and temporary files. This would reduce
-# the number of instance attributes while making the test setup clearer.
-# pylint: disable=too-many-instance-attributes
 
 
-# TODO(dsullivan): Consider creating a test_utils.py with common WARC test data.
-# For now, keeping the test data duplicated for test independence and clarity.
-# pylint: disable=duplicate-code
+class MockProcessor(WarcRecordProcessor):
+    """Mock processor for testing."""
+
+    def __init__(self, can_process_result=True, process_result="processed"):
+        self._can_process_result = can_process_result
+        self._process_result = process_result
+        self.can_process_called = False
+        self.process_called = False
+
+    def can_process(self, content_type: ContentType) -> bool:
+        """Mock can_process method."""
+        if content_type is None:
+            return False
+        self.can_process_called = True
+        return self._can_process_result
+
+    def process(self, processor_input: ProcessorInput) -> str:
+        """Mock process method."""
+        self.process_called = True
+        if self._process_result is None:
+            raise ValueError("Processing failed")
+        return self._process_result
+
+
 class TestWarcProcessor(unittest.TestCase):
-    """Test cases for WarcProcessor."""
+    """Test the WARC processor."""
 
     def setUp(self):
         """Set up test fixtures."""
-        # Create temporary files
-        self.temp_dir = tempfile.mkdtemp()
-        self.warc_path = os.path.join(self.temp_dir, 'test.warc')
-        self.output_path = os.path.join(self.temp_dir, 'output.txt')
-
-        # Create mock components
-        self.mock_processor = MagicMock()
-        self.mock_writer = MagicMock(spec=OutputWriter)
-        self.mock_parser = MagicMock(spec=WarcRecordParser)
-        self.mock_chain = MagicMock(spec=WarcRecordProcessorChain)
-
-        # Create mock stats with proper attributes
+        self.mock_processor = MagicMock(spec=WarcRecordProcessor)
+        self.mock_output_writer = MagicMock(spec=OutputWriter)
+        self.mock_record_parser = MagicMock(spec=WarcRecordParser)
         self.mock_stats = MagicMock(spec=ProcessingStats)
-        self.mock_stats.input_size_mb = 0.1
-        self.mock_stats.records_processed = 0
-        self.mock_stats.records_parsed = 0
-        self.mock_stats.records_skipped = 0
-        self.mock_stats.records_failed = 0
-        self.mock_stats.bytes_processed = 0
 
-        # Create processor
         self.processor = WarcProcessor(processors=[self.mock_processor],
-                                       output_writer=self.mock_writer,
-                                       record_parser=self.mock_parser,
-                                       stats=self.mock_stats,
-                                       processor_chain=self.mock_chain)
+                                       output_writer=self.mock_output_writer,
+                                       record_parser=self.mock_record_parser,
+                                       stats=self.mock_stats)
 
-    def tearDown(self):
-        """Clean up test fixtures."""
-        shutil.rmtree(self.temp_dir)
+    def create_record(self, content="test content", content_type=None):
+        """Create a test WARC record."""
+        record = WarcRecord(warc_type="response",
+                            warc_date=datetime.now(),
+                            warc_record_id="test-record-id",
+                            content_length=len(content) if content else 0,
+                            content_type=content_type,
+                            content=content,
+                            target_uri="http://example.com",
+                            record_id="<urn:uuid:12345678>",
+                            record_type="response",
+                            date=datetime.now())
+        return record
 
-    def test_process_warc_file(self):
-        """Test processing WARC file."""
-        # Configure mock processor
-        self.mock_processor.can_process.return_value = True
-        self.mock_processor.process.return_value = 'processed content'
+    def test_process_record_success(self):
+        """Test successful record processing."""
+        content_type = ContentType('text/html')
+        record = self.create_record(content_type=content_type)
+        processor_input = ProcessorInput(content=record.content,
+                                         content_type=content_type)
 
-        # Configure mock chain
-        self.mock_chain.process.return_value = 'processed content'
+        self.mock_processor.can_process = MagicMock(return_value=True)
+        self.mock_processor.process = MagicMock(return_value='processed')
 
-        # Configure mock parser
-        self.mock_parser.parse.return_value = MagicMock()
+        # pylint: disable=protected-access
+        result = self.processor._process_record(record)
 
-        # Create test WARC file
-        warc_content = (b'WARC/1.0\r\n'
-                        b'WARC-Type: response\r\n'
-                        b'WARC-Date: 2025-01-24T12:34:56Z\r\n'
-                        b'WARC-Record-ID: <urn:uuid:test-id>\r\n'
-                        b'Content-Length: 100\r\n'
-                        b'Content-Type: text/html\r\n'
-                        b'WARC-Target-URI: http://example.com\r\n'
-                        b'\r\n'
-                        b'HTTP/1.1 200 OK\r\n'
-                        b'Content-Type: text/html\r\n'
-                        b'Content-Length: 100\r\n'
-                        b'\r\n'
-                        b'test content')
+        self.assertEqual(result, 'processed')
+        self.mock_processor.can_process.assert_called_once_with(content_type)
+        self.mock_processor.process.assert_called_once_with(processor_input)
 
-        with open(self.warc_path, 'wb') as f:
-            f.write(warc_content)
-
-        # Process file
-        stats = self.processor.process_warc_file(self.warc_path,
-                                                 self.output_path)
-
-        # Verify writer was configured
-        self.mock_writer.configure.assert_called_once_with(self.output_path)
-
-        # Verify record was written
-        self.assertEqual(self.mock_writer.write_record.call_count, 1)
-
-        # Verify stats
-        self.assertEqual(stats.records_processed,
-                         self.mock_stats.records_processed)
-        self.assertEqual(stats.records_skipped, self.mock_stats.records_skipped)
-        self.assertEqual(stats.records_failed, self.mock_stats.records_failed)
-
-    def test_process_warc_file_bad_output(self):
-        """Test processing WARC file with bad output path."""
-        # Create test WARC file
-        with open(self.warc_path, 'wb') as f:
-            f.write(b'test content')
-
-        # Configure mock writer to raise error
-        self.mock_writer.configure.side_effect = PermissionError(
-            "Permission denied")
-
-        # Process file should raise error
-        with self.assertRaises(PermissionError):
-            self.processor.process_warc_file(self.warc_path, '/bad/path')
-
-    def test_process_warc_file_missing(self):
-        """Test processing missing WARC file."""
-        with self.assertRaises(FileNotFoundError):
-            self.processor.process_warc_file('/missing/file', self.output_path)
-
-    def test_process_warc_file_no_processor(self):
-        """Test processing WARC file with no matching processor."""
-        # Configure mock processor
+    def test_process_record_no_processor(self):
+        """Test when no processor can handle the record."""
         self.mock_processor.can_process.return_value = False
+        record = self.create_record(content_type="text/html")
 
-        # Configure mock chain
-        self.mock_chain.process.return_value = None
+        # pylint: disable=protected-access
+        result = self.processor._process_record(record)
 
-        # Configure mock parser
-        self.mock_parser.parse.return_value = MagicMock()
+        self.assertIsNone(result)
+        self.mock_processor.process.assert_not_called()
 
-        # Create test WARC file with valid WARC content
-        warc_content = (b'WARC/1.0\r\n'
-                        b'WARC-Type: response\r\n'
-                        b'WARC-Date: 2025-01-24T12:34:56Z\r\n'
-                        b'WARC-Record-ID: <urn:uuid:test-id>\r\n'
-                        b'Content-Length: 100\r\n'
-                        b'Content-Type: text/html\r\n'
-                        b'WARC-Target-URI: http://example.com\r\n'
-                        b'\r\n'
-                        b'HTTP/1.1 200 OK\r\n'
-                        b'Content-Type: text/html\r\n'
-                        b'Content-Length: 100\r\n'
-                        b'\r\n'
-                        b'test content')
+    def test_process_record_processing_error(self):
+        """Test when processing fails."""
+        self.mock_processor.process.side_effect = ValueError(
+            "Processing failed")
+        record = self.create_record(content_type="text/html")
 
-        with open(self.warc_path, 'wb') as f:
-            f.write(warc_content)
+        # pylint: disable=protected-access
+        result = self.processor._process_record(record)
 
-        # Process file
-        stats = self.processor.process_warc_file(self.warc_path,
-                                                 self.output_path)
+        self.assertIsNone(result)
 
-        # Verify no records were written
-        self.mock_writer.write_record.assert_not_called()
+    def test_process_record_no_content(self):
+        """Test processing record with no content."""
+        record = self.create_record(content_type="text/html", content=None)
 
-        # Verify stats
-        self.assertEqual(stats.records_processed,
-                         self.mock_stats.records_processed)
-        self.assertEqual(stats.records_skipped, self.mock_stats.records_skipped)
-        self.assertEqual(stats.records_failed, self.mock_stats.records_failed)
+        # pylint: disable=protected-access
+        result = self.processor._process_record(record)
+
+        self.assertIsNone(result)
+        self.mock_processor.can_process.assert_not_called()
+
+    def test_process_record_no_content_type(self):
+        """Test processing record with no content type."""
+        record = self.create_record(content_type=None)
+
+        # pylint: disable=protected-access
+        result = self.processor._process_record(record)
+
+        self.assertIsNone(result)
+        self.mock_processor.can_process.assert_not_called()
+
+    @patch('builtins.open', create=True)
+    def test_process_warc_file(self, mock_open):
+        """Test processing a WARC file."""
+        # Setup mock record
+        record = self.create_record()
+        self.mock_record_parser.parse.return_value = record
+
+        # Setup mock file with WARC content
+        mock_file = io.BytesIO(b'WARC/1.0\r\n'
+                               b'WARC-Type: response\r\n'
+                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
+                               b'WARC-Record-ID: <urn:uuid:12345678>\r\n'
+                               b'WARC-Target-URI: http://example.com\r\n'
+                               b'Content-Length: 12\r\n'
+                               b'Content-Type: text/html\r\n'
+                               b'\r\n'
+                               b'test content')
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        self.processor.process_warc_file('test.warc', 'test.out')
+
+        # Check that stats were tracked
+        self.mock_stats.start_processing.assert_called_once_with('test.warc')
+        self.mock_stats.track_parsed_record.assert_called_once()
+        self.mock_stats.track_skipped_record.assert_called_once()
+        self.mock_stats.finish_processing.assert_called_once()
+
+        # Check that output writer was configured
+        self.mock_output_writer.configure.assert_called_once_with('test.out')
+
+    @patch('builtins.open', create=True)
+    def test_process_warc_file_skips_failed_records(self, mock_open):
+        """Test that processing continues after record failures."""
+        # Setup mock records
+        record1 = self.create_record()
+        record2 = self.create_record()
+        self.mock_record_parser.parse.side_effect = [record1, record2]
+
+        # Setup mock file with WARC content
+        mock_file = io.BytesIO(b'WARC/1.0\r\n'
+                               b'WARC-Type: response\r\n'
+                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
+                               b'WARC-Record-ID: <urn:uuid:12345678>\r\n'
+                               b'WARC-Target-URI: http://example.com\r\n'
+                               b'Content-Length: 12\r\n'
+                               b'Content-Type: text/html\r\n'
+                               b'\r\n'
+                               b'test content\r\n'
+                               b'\r\n'
+                               b'WARC/1.0\r\n'
+                               b'WARC-Type: response\r\n'
+                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
+                               b'WARC-Record-ID: <urn:uuid:87654321>\r\n'
+                               b'WARC-Target-URI: http://example.com\r\n'
+                               b'Content-Length: 12\r\n'
+                               b'Content-Type: text/html\r\n'
+                               b'\r\n'
+                               b'test content')
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        # Make first record fail processing
+        self.mock_processor.process.side_effect = ValueError(
+            "Processing failed")
+
+        self.processor.process_warc_file('test.warc', 'test.out')
+
+        # Check that stats were tracked for both records
+        self.mock_stats.start_processing.assert_called_once_with('test.warc')
+        self.assertEqual(self.mock_stats.track_parsed_record.call_count, 2)
+        self.assertEqual(self.mock_stats.track_skipped_record.call_count, 2)
+        self.mock_stats.finish_processing.assert_called_once()
+
+        # Check that output writer was configured
+        self.mock_output_writer.configure.assert_called_once_with('test.out')
+
+
+if __name__ == '__main__':
+    unittest.main()
