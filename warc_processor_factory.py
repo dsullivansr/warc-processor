@@ -1,6 +1,6 @@
 """Factory for creating WARC processors."""
 
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from processors.lexbor_html_processor import LexborHtmlProcessor
 from processing_stats import ProcessingStats
 from plain_text_writer import PlainTextWriter

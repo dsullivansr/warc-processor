@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from warc_processor_factory import WarcProcessorFactory
 
 

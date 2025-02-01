@@ -2,7 +2,7 @@
 
 import unittest
 
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from models.warc_mime_types import ContentType
 from warc_record_processor import ProcessorInput
 

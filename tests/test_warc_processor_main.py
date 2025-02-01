@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from warc_processor_main import main
 
 

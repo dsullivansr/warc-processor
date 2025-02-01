@@ -3,12 +3,11 @@
 import os
 import sys
 import logging
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from plain_text_writer import PlainTextWriter
 from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
-from warc_record_processor_chain import WarcRecordProcessorChain
 
 # Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -44,14 +43,12 @@ def main() -> None:
     output_writer = PlainTextWriter()
     record_parser = WarcRecordParser()
     stats = ProcessingStats()
-    processor_chain = WarcRecordProcessorChain([html_processor])
 
     # Create processor with HTML handler
     processor = WarcProcessor(processors=[html_processor],
                               output_writer=output_writer,
                               record_parser=record_parser,
-                              stats=stats,
-                              processor_chain=processor_chain)
+                              stats=stats)
 
     try:
         # Process the file
