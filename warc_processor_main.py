@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 
-from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from warc_processor_factory import WarcProcessorFactory
 
 
@@ -29,6 +28,11 @@ def parse_args():
                         choices=['html5lib', 'lxml', 'html.parser'],
                         default='html5lib',
                         help='HTML parser to use (default: html5lib)')
+
+    parser.add_argument(
+        '--config',
+        default='config.yaml',
+        help='Path to YAML configuration file (default: config.yaml)')
 
     parser.add_argument(
         '--log-level',
@@ -56,11 +60,16 @@ def main():
         logger.error("Input path not found: %s", args.input)
         return 1
 
-    # Create processor
-    processor = WarcProcessorFactory.create(
-        [BeautifulSoupHtmlProcessor(parser=args.parser)])
+    # Check if config exists
+    if not os.path.exists(args.config):
+        logger.error("Config file not found: %s", args.config)
+        return 1
 
     try:
+        # Create processor from config
+        processor = WarcProcessorFactory.create_from_config(args.config,
+                                                            parser=args.parser)
+
         # Process input path
         if os.path.isfile(args.input):
             processor.process_warc_file(args.input, args.output)
