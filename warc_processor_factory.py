@@ -3,7 +3,7 @@
 from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
 from processors.lexbor_html_processor import LexborHtmlProcessor
 from processing_stats import ProcessingStats
-from plain_text_writer import PlainTextWriter
+from writers.plain_text_writer import PlainTextWriter
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
 

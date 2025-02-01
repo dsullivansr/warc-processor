@@ -1,4 +1,4 @@
-"""Tests for plain text writer implementation."""
+"""Tests for PlainTextWriter."""
 
 import os
 import tempfile
@@ -6,7 +6,7 @@ import unittest
 import shutil
 
 from models.warc_record import WarcRecord, ProcessedWarcRecord
-from plain_text_writer import PlainTextWriter
+from writers.plain_text_writer import PlainTextWriter
 
 
 class TestPlainTextWriter(unittest.TestCase):

@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from plain_text_writer import PlainTextWriter
+from writers.plain_text_writer import PlainTextWriter
 from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
