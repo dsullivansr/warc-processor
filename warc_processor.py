@@ -51,31 +51,45 @@ class WarcProcessor:
         try:
             self.output_writer.configure(output_path)
             self.stats.start_processing(input_path)
-
-            with open(input_path, 'rb') as warc_file:
-                for record in ArchiveIterator(warc_file):
-                    try:
-                        parsed_record = self.record_parser.parse(record)
-                        self.stats.track_parsed_record()
-
-                        processed_content = self._process_record(parsed_record)
-                        if processed_content:
-                            processed_record = ProcessedWarcRecord(
-                                record=parsed_record,
-                                processed_content=processed_content)
-                            self.output_writer.write_record(processed_record)
-                            self.stats.track_processed_record()
-                        else:
-                            self.stats.track_skipped_record()
-                    except (ValueError, AttributeError) as e:
-                        logger.error("Failed to process record: %s", str(e))
-                        self.stats.track_skipped_record()
+            self._process_records_from_file(input_path)
         except (IOError, OSError) as e:
             logger.error("Failed to process WARC file: %s", str(e))
             raise
 
         self.stats.finish_processing()
         return self.stats
+
+    def _process_records_from_file(self, input_path: str) -> None:
+        """Process all records from a WARC file.
+
+        Args:
+            input_path: Path to input WARC file
+        """
+        with open(input_path, 'rb') as warc_file:
+            for record in ArchiveIterator(warc_file):
+                self._process_single_record(record)
+
+    def _process_single_record(self, record) -> None:
+        """Process a single record from the WARC file.
+
+        Args:
+            record: Raw WARC record to process
+        """
+        try:
+            parsed_record = self.record_parser.parse(record)
+            self.stats.track_parsed_record()
+
+            processed_content = self._process_record(parsed_record)
+            if processed_content:
+                processed_record = ProcessedWarcRecord(
+                    record=parsed_record, processed_content=processed_content)
+                self.output_writer.write_record(processed_record)
+                self.stats.track_processed_record()
+            else:
+                self.stats.track_skipped_record()
+        except (ValueError, AttributeError) as e:
+            logger.error("Failed to process record: %s", str(e))
+            self.stats.track_skipped_record()
 
     def _process_record(self, record: WarcRecord) -> Optional[str]:
         """Process a single WARC record.
