@@ -8,7 +8,7 @@ import os
 from warcio.archiveiterator import ArchiveIterator
 
 from warc_record_parser import WarcRecordParser
-from lexbor_html_processor import LexborHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 
 
 def profile_lexbor():

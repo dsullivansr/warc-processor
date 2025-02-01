@@ -4,8 +4,8 @@ import os
 from datetime import datetime
 from unittest import TestCase
 
-from beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from lexbor_html_processor import LexborHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 from plain_text_writer import PlainTextWriter
 from warc_processor_factory import WarcProcessorFactory
 

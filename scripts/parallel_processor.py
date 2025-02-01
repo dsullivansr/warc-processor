@@ -11,7 +11,7 @@ from warcio.archiveiterator import ArchiveIterator
 
 from warc_record_parser import WarcRecordParser
 from warc_record_processor_chain import WarcRecordProcessorChain
-from lexbor_html_processor import LexborHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 from plain_text_writer import PlainTextWriter
 from models.warc_record import ProcessedWarcRecord
 
