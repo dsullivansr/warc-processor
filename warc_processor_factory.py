@@ -1,9 +1,12 @@
 """Factory for creating WarcProcessor instances."""
 
 import logging
+import os
 from typing import List, Optional
 
-from processor_loader import ProcessorLoader
+import yaml
+
+from component_loader import ComponentLoader
 from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
@@ -26,18 +29,47 @@ class WarcProcessorFactory:
 
         Returns:
             Configured WarcProcessor instance
+
+        Raises:
+            ValueError: If processor class cannot be found or instantiated
         """
-        try:
-            processors = ProcessorLoader.load_processors(
-                config_path, **overrides)
-            return WarcProcessorFactory.create(processors)
-        except Exception as e:
-            logger.error("Failed to create processor from config: %s", str(e))
-            raise
+        # Load configuration
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+
+        # Load processor classes
+        processor_dir = os.path.join(os.path.dirname(__file__), 'processors')
+        processor_classes = ComponentLoader.load_components(
+            processor_dir,
+            WarcRecordProcessor,
+        )
+
+        # Instantiate configured processors
+        processors = []
+        for processor_config in config.get('processors', []):
+            class_name = processor_config['class']
+            if class_name not in processor_classes:
+                msg = (f'Processor class {class_name} not found in '
+                       'processors dir')
+                raise ValueError(msg)
+
+            # Merge config with overrides
+            merged_config = processor_config.get('config', {})
+            merged_config.update(overrides)
+
+            try:
+                processor = processor_classes[class_name](**merged_config)
+                processors.append(processor)
+            except Exception as e:
+                msg = (f'Failed to instantiate processor {class_name}: '
+                       f'{str(e)}')
+                raise ValueError(msg) from e
+
+        return WarcProcessorFactory.create(processors)
 
     @staticmethod
     def create(
-        processors: Optional[List[WarcRecordProcessor]] = None
+        processors: Optional[List[WarcRecordProcessor]] = None,
     ) -> WarcProcessor:
         """Create a WarcProcessor instance.
 
@@ -50,11 +82,9 @@ class WarcProcessorFactory:
         if processors is None:
             processors = []
 
-        output_writer = PlainTextWriter()
-        record_parser = WarcRecordParser()
-        stats = ProcessingStats()
-
-        return WarcProcessor(processors=processors,
-                             output_writer=output_writer,
-                             record_parser=record_parser,
-                             stats=stats)
+        return WarcProcessor(
+            record_parser=WarcRecordParser(),
+            processors=processors,
+            output_writer=PlainTextWriter(),
+            stats=ProcessingStats(),
+        )
