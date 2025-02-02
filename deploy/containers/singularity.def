@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: python:3.12-slim
+
+%files
+    . /opt/warc-processor
+
+%post
+    cd /opt/warc-processor
+    pip install -r requirements.txt
+    pip install .
+
+%runscript
+    python /opt/warc-processor/warc_processor_main.py "$@"
+
+%labels
+    Author YourName
+    Version 1.0
+
+%help
+    This container provides the WARC processor application.
+    
+    Usage:
+    singularity run warc-processor.sif [arguments]
+    
+    The container accepts all arguments that the WARC processor normally accepts.
