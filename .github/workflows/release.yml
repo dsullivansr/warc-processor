@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          
+      - name: Build binary
+        run: |
+          cd deploy/binary
+          ./create_release.sh
+          
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum warc-processor-*.tar.gz > SHA256SUMS
+          
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Get the previous tag
+          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$prev_tag" ]; then
+            # If no previous tag, use all commits
+            git log --pretty=format:"- %s" > RELEASE_NOTES.md
+          else
+            # Get commits since last tag
+            git log --pretty=format:"- %s" $prev_tag..HEAD > RELEASE_NOTES.md
+          fi
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/warc-processor-*.tar.gz
+            dist/SHA256SUMS
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

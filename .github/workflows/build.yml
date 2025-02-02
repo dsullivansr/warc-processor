@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          
+      - name: Run tests
+        run: |
+          pytest tests/ --cov=warc_processor
+          
+      - name: Build binary
+        run: |
+          pip install pyinstaller
+          cd deploy/binary
+          ./create_release.sh
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: warc-processor-binary
+          path: dist/warc-processor-*.tar.gz
