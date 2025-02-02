@@ -46,3 +46,4 @@ test_data/
 *.warc.gz
 output.txt
 create_sample.py
+warc-processor.spec
