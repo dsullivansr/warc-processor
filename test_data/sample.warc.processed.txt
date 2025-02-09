@@ -1,6 +1,0 @@
-WARC-Target-URI: http://example.com
-WARC-Date: 2025-01-26T19:59:49Z
-Content-Type: text/html
-
-Test Page Hello World This is a test page.
-
