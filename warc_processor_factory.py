@@ -2,11 +2,9 @@
 
 import logging
 import os
+import yaml
 from typing import List, Optional
 
-import yaml
-
-from component_loader import ComponentLoader
 from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
@@ -29,43 +27,11 @@ class WarcProcessorFactory:
 
         Returns:
             Configured WarcProcessor instance
-
-        Raises:
-            ValueError: If processor class cannot be found or instantiated
         """
-        # Load configuration
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-
-        # Load processor classes
-        processor_dir = os.path.join(os.path.dirname(__file__), 'processors')
-        processor_classes = ComponentLoader.load_components(
-            processor_dir,
-            WarcRecordProcessor,
-        )
-
-        # Instantiate configured processors
-        processors = []
-        for processor_config in config.get('processors', []):
-            class_name = processor_config['class']
-            if class_name not in processor_classes:
-                msg = (f'Processor class {class_name} not found in '
-                       'processors dir')
-                raise ValueError(msg)
-
-            # Merge config with overrides
-            merged_config = processor_config.get('config', {})
-            merged_config.update(overrides)
-
-            try:
-                processor = processor_classes[class_name](**merged_config)
-                processors.append(processor)
-            except Exception as e:
-                msg = (f'Failed to instantiate processor {class_name}: '
-                       f'{str(e)}')
-                raise ValueError(msg) from e
-
-        return WarcProcessorFactory.create(processors)
+        # Dynamic processor loading removed; processors configuration is no longer supported.
+        return WarcProcessorFactory.create([])
 
     @staticmethod
     def create(
