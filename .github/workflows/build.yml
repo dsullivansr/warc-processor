@@ -61,7 +61,23 @@ jobs:
           tar czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
           rm -rf "${RELEASE_NAME}"
           echo "Created release archive: dist/${RELEASE_NAME}.tar.gz"
-          
+      - name: Test binary
+        run: |
+          # Recalculate version and release name
+          VERSION=$(python3 -c "exec(open('setup.py').read()); print(__version__)" 2>/dev/null || date +"%Y.%m.%d")
+          RELEASE_NAME="warc-processor-${VERSION}-linux-x86_64"
+          echo "Testing binary for release: ${RELEASE_NAME}"
+          # Extract the archive
+          mkdir -p dist/test_extract
+          tar -xzf "dist/${RELEASE_NAME}.tar.gz" -C dist/test_extract
+          # Run the binary with --help and check output
+          OUTPUT=$(dist/test_extract/${RELEASE_NAME}/warc-processor --help || true)
+          echo "$OUTPUT"
+          if [[ "$OUTPUT" != *"Usage"* ]]; then
+            echo "Binary test failed: missing 'Usage' in output"
+            exit 1
+          fi
+          echo "Binary test passed"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
