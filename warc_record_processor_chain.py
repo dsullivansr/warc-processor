@@ -62,8 +62,11 @@ class WarcRecordProcessorChain:
                     processed = True
 
             except (ValueError, ParserRejectedMarkup, UnicodeDecodeError) as e:
-                logger.error("Processor %s failed: %s",
-                             processor.__class__.__name__, str(e))
+                logger.error(
+                    "Processor %s failed: %s",
+                    processor.__class__.__name__,
+                    str(e),
+                )
                 return None
 
         # Return None if no processor succeeded

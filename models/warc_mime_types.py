@@ -5,7 +5,8 @@ from typing import Dict, Optional
 
 # Regular expression for validating MIME types
 MIME_TYPE_PATTERN = re.compile(
-    r'^[a-zA-Z0-9]+/[a-zA-Z0-9+\-_.]+(?:\s*;\s*[a-zA-Z0-9]+=[a-zA-Z0-9\-]+)*$')
+    r"^[a-zA-Z0-9]+/[a-zA-Z0-9+\-_.]+(?:\s*;\s*[a-zA-Z0-9]+=[a-zA-Z0-9\-]+)*$"
+)
 
 
 class ContentTypeError(ValueError):
@@ -15,10 +16,12 @@ class ContentTypeError(ValueError):
 class ContentType:
     """Content type representation."""
 
-    def __init__(self,
-                 type_str_or_main_type: str,
-                 subtype: Optional[str] = None,
-                 parameters: Optional[Dict[str, str]] = None):
+    def __init__(
+        self,
+        type_str_or_main_type: str,
+        subtype: Optional[str] = None,
+        parameters: Optional[Dict[str, str]] = None,
+    ):
         """Initialize ContentType.
 
         Can be initialized in two ways:
@@ -38,8 +41,8 @@ class ContentType:
 
         if subtype is None:
             # Parse type string
-            parts = type_str_or_main_type.split(';')
-            type_parts = parts[0].strip().split('/')
+            parts = type_str_or_main_type.split(";")
+            type_parts = parts[0].strip().split("/")
             if len(type_parts) != 2:
                 raise ContentTypeError("Invalid content type string")
 
@@ -49,7 +52,7 @@ class ContentType:
             if not main_type or not subtype:
                 raise ContentTypeError("Main type and subtype cannot be empty")
 
-            if '//' in type_str_or_main_type:
+            if "//" in type_str_or_main_type:
                 raise ContentTypeError("Invalid content type string")
 
             self.main_type = main_type.lower()
@@ -58,7 +61,7 @@ class ContentType:
             # Parse parameters
             self.parameters = {}
             for part in parts[1:]:
-                param_parts = part.strip().split('=', 1)
+                param_parts = part.strip().split("=", 1)
                 if len(param_parts) != 2:
                     raise ContentTypeError("Invalid parameter format")
                 key = param_parts[0].strip()
@@ -92,8 +95,9 @@ class ContentType:
         """Check equality with another ContentType."""
         if not isinstance(other, ContentType):
             return NotImplemented
-        return (self.main_type == other.main_type and
-                self.subtype == other.subtype)
+        return (
+            self.main_type == other.main_type and self.subtype == other.subtype
+        )
 
     def matches(self, pattern: str) -> bool:
         """Check if content type matches a pattern.
@@ -104,12 +108,14 @@ class ContentType:
         Returns:
             True if matches, False otherwise
         """
-        if pattern == '*/*':
+        if pattern == "*/*":
             return True
 
-        if '/' not in pattern:
+        if "/" not in pattern:
             return False
 
-        pattern_main, pattern_sub = pattern.split('/')
-        return (pattern_main in {'*', self.main_type} and
-                pattern_sub in {'*', self.subtype})
+        pattern_main, pattern_sub = pattern.split("/")
+        return pattern_main in {"*", self.main_type} and pattern_sub in {
+            "*",
+            self.subtype,
+        }

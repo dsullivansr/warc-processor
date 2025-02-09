@@ -146,12 +146,14 @@ class ProcessingStats:
             return
 
         current_time = datetime.now()
-        if (not force and
-            (current_time - self.start_time) < timedelta(seconds=1)):
+        if not force and (current_time - self.start_time) < timedelta(
+            seconds=1
+        ):
             return
 
-        total = (self.records_processed + self.records_skipped +
-                 self.records_failed)
+        total = (
+            self.records_processed + self.records_skipped + self.records_failed
+        )
 
         # Log progress every 100 records or when forced
         if total % 100 == 0 or force:
@@ -168,8 +170,9 @@ class ProcessingStats:
 
             # Break long log message into multiple lines
             msg = "Processed %d records (%.1f/%.1f MB, %.1f%%%s)"
-            logger.info(msg, total, mb_processed, self.input_size_mb, pct,
-                        rate_str)
+            logger.info(
+                msg, total, mb_processed, self.input_size_mb, pct, rate_str
+            )
 
     def get_summary(self) -> dict:
         """Get summary of processing statistics.
@@ -178,13 +181,13 @@ class ProcessingStats:
             Dictionary containing processing statistics
         """
         return {
-            'records_parsed': self.records_parsed,
-            'records_processed': self.records_processed,
-            'records_skipped': self.records_skipped,
-            'records_failed': self.records_failed,
-            'bytes_processed': self.bytes_processed,
-            'input_size': self.input_size,
-            'input_size_mb': self.input_size_mb,
-            'processing_time': self.get_processing_time(),
-            'processing_rate': self.get_processing_rate()
+            "records_parsed": self.records_parsed,
+            "records_processed": self.records_processed,
+            "records_skipped": self.records_skipped,
+            "records_failed": self.records_failed,
+            "bytes_processed": self.bytes_processed,
+            "input_size": self.input_size,
+            "input_size_mb": self.input_size_mb,
+            "processing_time": self.get_processing_time(),
+            "processing_rate": self.get_processing_rate(),
         }

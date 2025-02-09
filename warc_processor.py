@@ -17,9 +17,13 @@ logger = logging.getLogger(__name__)
 class WarcProcessor:
     """Process WARC files."""
 
-    def __init__(self, processors: List[WarcRecordProcessor],
-                 output_writer: OutputWriter, record_parser: WarcRecordParser,
-                 stats: ProcessingStats):
+    def __init__(
+        self,
+        processors: List[WarcRecordProcessor],
+        output_writer: OutputWriter,
+        record_parser: WarcRecordParser,
+        stats: ProcessingStats,
+    ):
         """Initialize the processor.
 
         Args:
@@ -33,8 +37,9 @@ class WarcProcessor:
         self.record_parser = record_parser
         self.stats = stats
 
-    def process_warc_file(self, input_path: str,
-                          output_path: str) -> ProcessingStats:
+    def process_warc_file(
+        self, input_path: str, output_path: str
+    ) -> ProcessingStats:
         """Process a WARC file.
 
         Args:
@@ -65,7 +70,7 @@ class WarcProcessor:
         Args:
             input_path: Path to input WARC file
         """
-        with open(input_path, 'rb') as warc_file:
+        with open(input_path, "rb") as warc_file:
             for record in ArchiveIterator(warc_file):
                 self._process_single_record(record)
 
@@ -82,7 +87,8 @@ class WarcProcessor:
             processed_content = self._process_record(parsed_record)
             if processed_content:
                 processed_record = ProcessedWarcRecord(
-                    record=parsed_record, processed_content=processed_content)
+                    record=parsed_record, processed_content=processed_content
+                )
                 self.output_writer.write_record(processed_record)
                 self.stats.track_processed_record()
             else:
@@ -112,12 +118,13 @@ class WarcProcessor:
             for processor in self.processors:
                 if processor.can_process(record.content_type):
                     processor_input = ProcessorInput(
-                        content=record.content,
-                        content_type=record.content_type)
+                        content=record.content, content_type=record.content_type
+                    )
                     return processor.process(processor_input)
         except (ValueError, AttributeError) as e:
-            logger.error("Failed to process record %s: %s", record.record_id,
-                         str(e))
+            logger.error(
+                "Failed to process record %s: %s", record.record_id, str(e)
+            )
             return None
 
         return None

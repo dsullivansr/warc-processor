@@ -13,17 +13,20 @@ class TestRealWarc(unittest.TestCase):
 
     def setUp(self):
         """Set up test case."""
-        self.config_file = os.path.join(tempfile.gettempdir(),
-                                        'test_config.yaml')
+        self.config_file = os.path.join(
+            tempfile.gettempdir(), "test_config.yaml"
+        )
 
         # Create test config
-        with open(self.config_file, 'w', encoding='utf-8') as f:
-            f.write('''processors:
+        with open(self.config_file, "w", encoding="utf-8") as f:
+            f.write(
+                """processors:
   - class: BeautifulSoupHtmlProcessor
     config:
       parser: html5lib
   - class: LexborHtmlProcessor
-    config: {}''')
+    config: {}"""
+            )
 
     def tearDown(self):
         """Clean up test case."""
@@ -32,8 +35,9 @@ class TestRealWarc(unittest.TestCase):
 
     def test_process_sample_warc(self):
         """Tests processing a sample WARC file with plaintext output."""
-        warc_path = os.path.join(os.path.dirname(__file__), "..", "test_data",
-                                 "sample.warc.gz")
+        warc_path = os.path.join(
+            os.path.dirname(__file__), "..", "test_data", "sample.warc.gz"
+        )
 
         # Skip test if WARC file doesn't exist
         if not os.path.exists(warc_path):
@@ -53,7 +57,8 @@ class TestRealWarc(unittest.TestCase):
             # Process WARC file
             start_time = datetime.now()
             processor = WarcProcessorFactory.create_from_config(
-                self.config_file)
+                self.config_file
+            )
             stats = processor.process_warc_file(warc_path, output_path)
 
             # Print processing stats

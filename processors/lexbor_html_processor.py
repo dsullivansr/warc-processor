@@ -30,8 +30,9 @@ class LexborHtmlProcessor(WarcRecordProcessor):
             return False
 
         # Only handle text/html, not application/xhtml+xml
-        return (content_type.main_type == 'text' and
-                content_type.subtype == 'html')
+        return (
+            content_type.main_type == "text" and content_type.subtype == "html"
+        )
 
     def process(self, processor_input: ProcessorInput) -> str:
         """Process HTML content using Lexbor.
@@ -53,12 +54,12 @@ class LexborHtmlProcessor(WarcRecordProcessor):
             doc = lxml.html.fromstring(processor_input.content)
 
             # Remove script and style elements
-            for element in doc.xpath('//script | //style'):
+            for element in doc.xpath("//script | //style"):
                 element.getparent().remove(element)
 
             # Extract text content
-            text = ' '.join(doc.xpath('//text()'))
-            return ' '.join(text.split())
+            text = " ".join(doc.xpath("//text()"))
+            return " ".join(text.split())
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Failed to parse HTML: %s", str(e))
             raise ValueError(f"Failed to parse HTML: {str(e)}") from e

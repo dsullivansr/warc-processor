@@ -5,14 +5,24 @@ import subprocess
 import shutil
 
 if not os.getenv("VIRTUAL_ENV"):
-    venv_path = os.path.join(os.getcwd(), 'venv')
+    venv_path = os.path.join(os.getcwd(), "venv")
     if not os.path.exists(venv_path):
         print("Creating virtual environment...")
-        subprocess.check_call([sys.executable, '-m', 'venv', 'venv'])
+        subprocess.check_call([sys.executable, "-m", "venv", "venv"])
     print("Installing development dependencies in virtual environment...")
-    subprocess.check_call([os.path.join(venv_path, 'bin', 'pip'), 'install', '-r', 'requirements-dev.txt'])
+    subprocess.check_call(
+        [
+            os.path.join(venv_path, "bin", "pip"),
+            "install",
+            "-r",
+            "requirements-dev.txt",
+        ]
+    )
     print("Re-executing pre-commit hook with virtual environment's python...")
-    os.execv(os.path.join(venv_path, 'bin', 'python'), [os.path.join(venv_path, 'bin', 'python')] + sys.argv)
+    os.execv(
+        os.path.join(venv_path, "bin", "python"),
+        [os.path.join(venv_path, "bin", "python")] + sys.argv,
+    )
 
 """Git pre-commit hook for WARC processor.
 
@@ -41,11 +51,9 @@ def run_command(cmd: List[str], cwd: str = None) -> Tuple[int, str, str]:
         Tuple of (exit_code, stdout, stderr)
     """
     try:
-        result = subprocess.run(cmd,
-                                cwd=cwd,
-                                check=False,
-                                capture_output=True,
-                                text=True)
+        result = subprocess.run(
+            cmd, cwd=cwd, check=False, capture_output=True, text=True
+        )
         return result.returncode, result.stdout, result.stderr
     except (subprocess.SubprocessError, OSError) as e:
         return 1, "", str(e)
@@ -53,7 +61,7 @@ def run_command(cmd: List[str], cwd: str = None) -> Tuple[int, str, str]:
 
 def check_dependencies() -> bool:
     """Check if required tools are installed. Returns True if all dependencies are present, False otherwise."""
-    required_tools = ['yapf', 'pylint', 'pytest']
+    required_tools = ["yapf", "pylint", "pytest"]
     for tool in required_tools:
         if not shutil.which(tool):
             print(f"Error: {tool} not found. Please install it with pip.")
@@ -67,12 +75,12 @@ def get_staged_python_files() -> List[str]:
     Returns:
         List of staged Python file paths
     """
-    code, out, _ = run_command(['git', 'diff', '--cached', '--name-only'])
+    code, out, _ = run_command(["git", "diff", "--cached", "--name-only"])
     if code != 0:
         return []
 
     return [
-        f for f in out.splitlines() if f.endswith('.py') and os.path.exists(f)
+        f for f in out.splitlines() if f.endswith(".py") and os.path.exists(f)
     ]
 
 
@@ -89,9 +97,10 @@ def check_formatting(files: List[str]) -> bool:
         return True
 
     print("\nChecking code formatting...")
-    yapf_style = '{based_on_style: google, column_limit: 80}'
-    code, out, _ = run_command(['yapf', '--style', yapf_style, '--diff'] +
-                               files)
+    yapf_style = "{based_on_style: google, column_limit: 80}"
+    code, out, _ = run_command(
+        ["yapf", "--style", yapf_style, "--diff"] + files
+    )
 
     if code == 0 and not out:
         print("✓ All files are properly formatted")
@@ -118,7 +127,7 @@ def run_pylint(files: List[str]) -> bool:
         return True
 
     print("\nRunning pylint...")
-    code, out, _ = run_command(['pylint'] + files)
+    code, out, _ = run_command(["pylint"] + files)
 
     if code == 0:
         print("✓ Pylint checks passed")
@@ -136,7 +145,7 @@ def run_tests() -> bool:
         True if all tests pass, False otherwise
     """
     print("\nRunning tests...")
-    code, out, _ = run_command(['pytest', 'tests/', '-v'])
+    code, out, _ = run_command(["pytest", "tests/", "-v"])
 
     if code == 0:
         print("✓ All tests passed")
@@ -181,7 +190,7 @@ def main() -> int:
     return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
 
 # trivial commit test

@@ -50,22 +50,22 @@ class WarcRecordParser:
         """
         try:
             # Early validation
-            if not record or record.rec_type != 'response':
+            if not record or record.rec_type != "response":
                 logger.debug("Not a response record")
                 return None
 
             # Check response status
             if isinstance(record.http_headers, StatusAndHeaders):
                 status = record.http_headers.get_statuscode()
-                if status != '200':
+                if status != "200":
                     logger.debug("Skipping non-200 response: %s", status)
                     return None
 
             # Extract and validate required fields
             headers = record.rec_headers
-            record_id = WarcRecordId(headers.get_header('WARC-Record-ID'))
-            target_uri = WarcUri.from_str(headers.get_header('WARC-Target-URI'))
-            date = headers.get_header('WARC-Date')
+            record_id = WarcRecordId(headers.get_header("WARC-Record-ID"))
+            target_uri = WarcUri.from_str(headers.get_header("WARC-Target-URI"))
+            date = headers.get_header("WARC-Date")
 
             if not all([target_uri, date]):
                 if not target_uri:
@@ -76,14 +76,15 @@ class WarcRecordParser:
 
             # Get content info
             http_headers = record.http_headers
-            default_type = 'text/html'
+            default_type = "text/html"
             content_type = ContentType(
-                http_headers.get_header('Content-Type', default_type))
+                http_headers.get_header("Content-Type", default_type)
+            )
             stream = record.content_stream()
-            content = stream.read().decode('utf-8', errors='ignore')
+            content = stream.read().decode("utf-8", errors="ignore")
 
             # Get optional fields
-            payload_digest = headers.get_header('WARC-Payload-Digest')
+            payload_digest = headers.get_header("WARC-Payload-Digest")
             if payload_digest:
                 payload_digest = PayloadDigest(payload_digest)
 
@@ -94,21 +95,23 @@ class WarcRecordParser:
                     response_headers[name] = value
 
             # Build and return record
-            return WarcRecord(record_id=record_id,
-                              record_type=record.rec_type,
-                              target_uri=target_uri,
-                              date=date,
-                              content_type=content_type,
-                              content=content,
-                              headers=response_headers,
-                              payload_digest=payload_digest)
+            return WarcRecord(
+                record_id=record_id,
+                record_type=record.rec_type,
+                target_uri=target_uri,
+                date=date,
+                content_type=content_type,
+                content=content,
+                headers=response_headers,
+                payload_digest=payload_digest,
+            )
 
         except (
-                ValueError,
-                URLError,
-                AttributeError,
-                IOError,
-                UnicodeError,
+            ValueError,
+            URLError,
+            AttributeError,
+            IOError,
+            UnicodeError,
         ) as e:
             logger.debug("Failed to parse record: %s", str(e))
             return None

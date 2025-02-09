@@ -48,39 +48,44 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_record_parser = MagicMock(spec=WarcRecordParser)
         self.mock_stats = MagicMock(spec=ProcessingStats)
 
-        self.processor = WarcProcessor(processors=[self.mock_processor],
-                                       output_writer=self.mock_output_writer,
-                                       record_parser=self.mock_record_parser,
-                                       stats=self.mock_stats)
+        self.processor = WarcProcessor(
+            processors=[self.mock_processor],
+            output_writer=self.mock_output_writer,
+            record_parser=self.mock_record_parser,
+            stats=self.mock_stats,
+        )
 
     def create_record(self, content="test content", content_type=None):
         """Create a test WARC record."""
-        record = WarcRecord(warc_type="response",
-                            warc_date=datetime.now(),
-                            warc_record_id="test-record-id",
-                            content_length=len(content) if content else 0,
-                            content_type=content_type,
-                            content=content,
-                            target_uri="http://example.com",
-                            record_id="<urn:uuid:12345678>",
-                            record_type="response",
-                            date=datetime.now())
+        record = WarcRecord(
+            warc_type="response",
+            warc_date=datetime.now(),
+            warc_record_id="test-record-id",
+            content_length=len(content) if content else 0,
+            content_type=content_type,
+            content=content,
+            target_uri="http://example.com",
+            record_id="<urn:uuid:12345678>",
+            record_type="response",
+            date=datetime.now(),
+        )
         return record
 
     def test_process_record_success(self):
         """Test successful record processing."""
-        content_type = ContentType('text/html')
+        content_type = ContentType("text/html")
         record = self.create_record(content_type=content_type)
-        processor_input = ProcessorInput(content=record.content,
-                                         content_type=content_type)
+        processor_input = ProcessorInput(
+            content=record.content, content_type=content_type
+        )
 
         self.mock_processor.can_process = MagicMock(return_value=True)
-        self.mock_processor.process = MagicMock(return_value='processed')
+        self.mock_processor.process = MagicMock(return_value="processed")
 
         # pylint: disable=protected-access
         result = self.processor._process_record(record)
 
-        self.assertEqual(result, 'processed')
+        self.assertEqual(result, "processed")
         self.mock_processor.can_process.assert_called_once_with(content_type)
         self.mock_processor.process.assert_called_once_with(processor_input)
 
@@ -98,7 +103,8 @@ class TestWarcProcessor(unittest.TestCase):
     def test_process_record_processing_error(self):
         """Test when processing fails."""
         self.mock_processor.process.side_effect = ValueError(
-            "Processing failed")
+            "Processing failed"
+        )
         record = self.create_record(content_type="text/html")
 
         # pylint: disable=protected-access
@@ -126,7 +132,7 @@ class TestWarcProcessor(unittest.TestCase):
         self.assertIsNone(result)
         self.mock_processor.can_process.assert_not_called()
 
-    @patch('builtins.open', create=True)
+    @patch("builtins.open", create=True)
     def test_process_warc_file(self, mock_open):
         """Test processing a WARC file."""
         # Setup mock record
@@ -134,29 +140,31 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_record_parser.parse.return_value = record
 
         # Setup mock file with WARC content
-        mock_file = io.BytesIO(b'WARC/1.0\r\n'
-                               b'WARC-Type: response\r\n'
-                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
-                               b'WARC-Record-ID: <urn:uuid:12345678>\r\n'
-                               b'WARC-Target-URI: http://example.com\r\n'
-                               b'Content-Length: 12\r\n'
-                               b'Content-Type: text/html\r\n'
-                               b'\r\n'
-                               b'test content')
+        mock_file = io.BytesIO(
+            b"WARC/1.0\r\n"
+            b"WARC-Type: response\r\n"
+            b"WARC-Date: 2023-01-01T00:00:00Z\r\n"
+            b"WARC-Record-ID: <urn:uuid:12345678>\r\n"
+            b"WARC-Target-URI: http://example.com\r\n"
+            b"Content-Length: 12\r\n"
+            b"Content-Type: text/html\r\n"
+            b"\r\n"
+            b"test content"
+        )
         mock_open.return_value.__enter__.return_value = mock_file
 
-        self.processor.process_warc_file('test.warc', 'test.out')
+        self.processor.process_warc_file("test.warc", "test.out")
 
         # Check that stats were tracked
-        self.mock_stats.start_processing.assert_called_once_with('test.warc')
+        self.mock_stats.start_processing.assert_called_once_with("test.warc")
         self.mock_stats.track_parsed_record.assert_called_once()
         self.mock_stats.track_skipped_record.assert_called_once()
         self.mock_stats.finish_processing.assert_called_once()
 
         # Check that output writer was configured
-        self.mock_output_writer.configure.assert_called_once_with('test.out')
+        self.mock_output_writer.configure.assert_called_once_with("test.out")
 
-    @patch('builtins.open', create=True)
+    @patch("builtins.open", create=True)
     def test_process_warc_file_skips_failed_records(self, mock_open):
         """Test that processing continues after record failures."""
         # Setup mock records
@@ -165,42 +173,45 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_record_parser.parse.side_effect = [record1, record2]
 
         # Setup mock file with WARC content
-        mock_file = io.BytesIO(b'WARC/1.0\r\n'
-                               b'WARC-Type: response\r\n'
-                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
-                               b'WARC-Record-ID: <urn:uuid:12345678>\r\n'
-                               b'WARC-Target-URI: http://example.com\r\n'
-                               b'Content-Length: 12\r\n'
-                               b'Content-Type: text/html\r\n'
-                               b'\r\n'
-                               b'test content\r\n'
-                               b'\r\n'
-                               b'WARC/1.0\r\n'
-                               b'WARC-Type: response\r\n'
-                               b'WARC-Date: 2023-01-01T00:00:00Z\r\n'
-                               b'WARC-Record-ID: <urn:uuid:87654321>\r\n'
-                               b'WARC-Target-URI: http://example.com\r\n'
-                               b'Content-Length: 12\r\n'
-                               b'Content-Type: text/html\r\n'
-                               b'\r\n'
-                               b'test content')
+        mock_file = io.BytesIO(
+            b"WARC/1.0\r\n"
+            b"WARC-Type: response\r\n"
+            b"WARC-Date: 2023-01-01T00:00:00Z\r\n"
+            b"WARC-Record-ID: <urn:uuid:12345678>\r\n"
+            b"WARC-Target-URI: http://example.com\r\n"
+            b"Content-Length: 12\r\n"
+            b"Content-Type: text/html\r\n"
+            b"\r\n"
+            b"test content\r\n"
+            b"\r\n"
+            b"WARC/1.0\r\n"
+            b"WARC-Type: response\r\n"
+            b"WARC-Date: 2023-01-01T00:00:00Z\r\n"
+            b"WARC-Record-ID: <urn:uuid:87654321>\r\n"
+            b"WARC-Target-URI: http://example.com\r\n"
+            b"Content-Length: 12\r\n"
+            b"Content-Type: text/html\r\n"
+            b"\r\n"
+            b"test content"
+        )
         mock_open.return_value.__enter__.return_value = mock_file
 
         # Make first record fail processing
         self.mock_processor.process.side_effect = ValueError(
-            "Processing failed")
+            "Processing failed"
+        )
 
-        self.processor.process_warc_file('test.warc', 'test.out')
+        self.processor.process_warc_file("test.warc", "test.out")
 
         # Check that stats were tracked for both records
-        self.mock_stats.start_processing.assert_called_once_with('test.warc')
+        self.mock_stats.start_processing.assert_called_once_with("test.warc")
         self.assertEqual(self.mock_stats.track_parsed_record.call_count, 2)
         self.assertEqual(self.mock_stats.track_skipped_record.call_count, 2)
         self.mock_stats.finish_processing.assert_called_once()
 
         # Check that output writer was configured
-        self.mock_output_writer.configure.assert_called_once_with('test.out')
+        self.mock_output_writer.configure.assert_called_once_with("test.out")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

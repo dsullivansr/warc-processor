@@ -11,10 +11,10 @@ class WarcUri:
 
     def __init__(self, uri: str):
         """Creates a WARC URI.
-        
+
         Args:
             uri: The URI string.
-            
+
         Raises:
             ValueError: If URI is invalid.
         """
@@ -41,12 +41,12 @@ class WarcUri:
         return self.uri == str(other)
 
     @classmethod
-    def from_str(cls, uri: str) -> 'WarcUri':
+    def from_str(cls, uri: str) -> "WarcUri":
         """Creates a WarcUri from a string.
-        
+
         Args:
             uri: The URI string.
-            
+
         Returns:
             WarcUri instance.
         """
@@ -58,7 +58,7 @@ class WarcRecordId:
 
     def __init__(self, record_id: str):
         """Creates a WARC record ID.
-        
+
         Args:
             record_id: The record ID string.
         """
@@ -80,7 +80,7 @@ class PayloadDigest:
 
     def __init__(self, digest: str):
         """Creates a WARC payload digest.
-        
+
         Args:
             digest: The digest string.
         """

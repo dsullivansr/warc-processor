@@ -14,31 +14,35 @@ def parse_args():
     Returns:
         Parsed command line arguments.
     """
-    parser = argparse.ArgumentParser(description='Process WARC files')
+    parser = argparse.ArgumentParser(description="Process WARC files")
 
     parser.add_argument(
-        'input', help='Input WARC file or directory containing WARC files')
-
-    parser.add_argument('--output',
-                        '-o',
-                        help='Output file or directory',
-                        required=True)
-
-    parser.add_argument('--parser',
-                        choices=['html5lib', 'lxml', 'html.parser'],
-                        default='html5lib',
-                        help='HTML parser to use (default: html5lib)')
+        "input", help="Input WARC file or directory containing WARC files"
+    )
 
     parser.add_argument(
-        '--config',
-        default='config.yaml',
-        help='Path to YAML configuration file (default: config.yaml)')
+        "--output", "-o", help="Output file or directory", required=True
+    )
 
     parser.add_argument(
-        '--log-level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO',
-        help='Set the logging level')
+        "--parser",
+        choices=["html5lib", "lxml", "html.parser"],
+        default="html5lib",
+        help="HTML parser to use (default: html5lib)",
+    )
+
+    parser.add_argument(
+        "--config",
+        default="config.yaml",
+        help="Path to YAML configuration file (default: config.yaml)",
+    )
+
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging level",
+    )
 
     return parser.parse_args()
 
@@ -66,9 +70,8 @@ def main():
         return 1
 
     try:
-        # Create processor from config
-        processor = WarcProcessorFactory.create_from_config(args.config,
-                                                            parser=args.parser)
+        # Create processor using default configuration as dynamic config loading is removed
+        processor = WarcProcessorFactory.create(processors=[])
 
         # Process input path
         if os.path.isfile(args.input):
@@ -76,20 +79,17 @@ def main():
         else:
             for root, _, files in os.walk(args.input):
                 for file in files:
-                    if file.endswith('.warc') or file.endswith('.warc.gz'):
+                    if file.endswith(".warc") or file.endswith(".warc.gz"):
                         input_path = os.path.join(root, file)
-                        output_path = os.path.join(args.output, file + '.txt')
+                        output_path = os.path.join(args.output, file + ".txt")
                         processor.process_warc_file(input_path, output_path)
 
         return 0
 
-    except IOError as e:
-        logger.error("IO error processing WARC file: %s", e)
-        return 1
-    except ValueError as e:
-        logger.error("Invalid WARC file format: %s", e)
+    except Exception as e:
+        logger.error("Failed to create processor: %s", str(e))
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

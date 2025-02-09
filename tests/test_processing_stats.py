@@ -14,7 +14,7 @@ class TestProcessingStats(unittest.TestCase):
         """Set up test fixtures."""
         self.stats = ProcessingStats()
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            temp_file.write(b'test content')
+            temp_file.write(b"test content")
             self.temp_file_path = temp_file.name
 
     def tearDown(self):
@@ -24,55 +24,55 @@ class TestProcessingStats(unittest.TestCase):
     def test_initial_stats(self):
         """Test initial statistics values."""
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 0)
-        self.assertEqual(summary['records_parsed'], 0)
-        self.assertEqual(summary['records_skipped'], 0)
-        self.assertEqual(summary['records_failed'], 0)
-        self.assertEqual(summary['input_size'], 0)
-        self.assertEqual(summary['input_size_mb'], 0.0)
+        self.assertEqual(summary["records_processed"], 0)
+        self.assertEqual(summary["records_parsed"], 0)
+        self.assertEqual(summary["records_skipped"], 0)
+        self.assertEqual(summary["records_failed"], 0)
+        self.assertEqual(summary["input_size"], 0)
+        self.assertEqual(summary["input_size_mb"], 0.0)
 
     def test_track_processed_record(self):
         """Test tracking processed record."""
         self.stats.track_processed_record()
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 1)
-        self.assertEqual(summary['records_parsed'], 0)
-        self.assertEqual(summary['records_skipped'], 0)
-        self.assertEqual(summary['records_failed'], 0)
+        self.assertEqual(summary["records_processed"], 1)
+        self.assertEqual(summary["records_parsed"], 0)
+        self.assertEqual(summary["records_skipped"], 0)
+        self.assertEqual(summary["records_failed"], 0)
 
     def test_track_parsed_record(self):
         """Test tracking parsed record."""
         self.stats.track_parsed_record()
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 0)
-        self.assertEqual(summary['records_parsed'], 1)
-        self.assertEqual(summary['records_skipped'], 0)
-        self.assertEqual(summary['records_failed'], 0)
+        self.assertEqual(summary["records_processed"], 0)
+        self.assertEqual(summary["records_parsed"], 1)
+        self.assertEqual(summary["records_skipped"], 0)
+        self.assertEqual(summary["records_failed"], 0)
 
     def test_track_skipped_record(self):
         """Test tracking skipped record."""
         self.stats.track_skipped_record()
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 0)
-        self.assertEqual(summary['records_parsed'], 0)
-        self.assertEqual(summary['records_skipped'], 1)
-        self.assertEqual(summary['records_failed'], 0)
+        self.assertEqual(summary["records_processed"], 0)
+        self.assertEqual(summary["records_parsed"], 0)
+        self.assertEqual(summary["records_skipped"], 1)
+        self.assertEqual(summary["records_failed"], 0)
 
     def test_track_failed_record(self):
         """Test tracking failed record."""
         self.stats.track_failed_record()
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 0)
-        self.assertEqual(summary['records_parsed'], 0)
-        self.assertEqual(summary['records_skipped'], 0)
-        self.assertEqual(summary['records_failed'], 1)
+        self.assertEqual(summary["records_processed"], 0)
+        self.assertEqual(summary["records_parsed"], 0)
+        self.assertEqual(summary["records_skipped"], 0)
+        self.assertEqual(summary["records_failed"], 1)
 
     def test_set_input_size(self):
         """Test setting input size."""
         self.stats.set_input_size(self.temp_file_path)
         summary = self.stats.get_summary()
-        self.assertEqual(summary['input_size'], len(b'test content'))
-        self.assertGreater(summary['input_size_mb'], 0)
+        self.assertEqual(summary["input_size"], len(b"test content"))
+        self.assertGreater(summary["input_size_mb"], 0)
 
     def test_reset_stats(self):
         """Test resetting statistics."""
@@ -88,12 +88,12 @@ class TestProcessingStats(unittest.TestCase):
 
         # Verify reset
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 0)
-        self.assertEqual(summary['records_parsed'], 0)
-        self.assertEqual(summary['records_skipped'], 0)
-        self.assertEqual(summary['records_failed'], 0)
-        self.assertEqual(summary['input_size'], 0)
-        self.assertEqual(summary['input_size_mb'], 0.0)
+        self.assertEqual(summary["records_processed"], 0)
+        self.assertEqual(summary["records_parsed"], 0)
+        self.assertEqual(summary["records_skipped"], 0)
+        self.assertEqual(summary["records_failed"], 0)
+        self.assertEqual(summary["input_size"], 0)
+        self.assertEqual(summary["input_size_mb"], 0.0)
 
     def test_multiple_records(self):
         """Test tracking multiple records."""
@@ -108,10 +108,10 @@ class TestProcessingStats(unittest.TestCase):
 
         # Verify counts
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_processed'], 3)
-        self.assertEqual(summary['records_parsed'], 4)
-        self.assertEqual(summary['records_skipped'], 2)
-        self.assertEqual(summary['records_failed'], 1)
+        self.assertEqual(summary["records_processed"], 3)
+        self.assertEqual(summary["records_parsed"], 4)
+        self.assertEqual(summary["records_skipped"], 2)
+        self.assertEqual(summary["records_failed"], 1)
 
     def test_record_processing_flow(self):
         """Test typical record processing flow."""
@@ -135,11 +135,11 @@ class TestProcessingStats(unittest.TestCase):
 
         # Verify final state
         summary = self.stats.get_summary()
-        self.assertEqual(summary['records_parsed'], 3)
-        self.assertEqual(summary['records_processed'], 1)
-        self.assertEqual(summary['records_skipped'], 1)
-        self.assertEqual(summary['records_failed'], 1)
+        self.assertEqual(summary["records_parsed"], 3)
+        self.assertEqual(summary["records_processed"], 1)
+        self.assertEqual(summary["records_skipped"], 1)
+        self.assertEqual(summary["records_failed"], 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

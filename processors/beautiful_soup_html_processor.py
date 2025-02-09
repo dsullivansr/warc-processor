@@ -19,7 +19,7 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
     3. Extracting text content with proper whitespace handling
     """
 
-    def __init__(self, parser: str = 'html5lib'):
+    def __init__(self, parser: str = "html5lib"):
         """Initialize processor.
 
         Args:
@@ -47,10 +47,12 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
             return False
 
         # Handle both text/html and application/xhtml+xml
-        if content_type.main_type == 'text' and content_type.subtype == 'html':
+        if content_type.main_type == "text" and content_type.subtype == "html":
             return True
-        if (content_type.main_type == 'application' and
-                content_type.subtype == 'xhtml+xml'):
+        if (
+            content_type.main_type == "application"
+            and content_type.subtype == "xhtml+xml"
+        ):
             return True
 
         return False
@@ -71,15 +73,15 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
             raise ValueError("Content cannot be empty or whitespace")
 
         try:
-            soup = bs4.BeautifulSoup(processor_input.content, 'html.parser')
+            soup = bs4.BeautifulSoup(processor_input.content, "html.parser")
 
             # Remove script and style elements
             for script in soup(["script", "style"]):
                 script.decompose()
 
             # Extract text with preserved whitespace
-            text = ' '.join(line.strip() for line in soup.stripped_strings)
+            text = " ".join(line.strip() for line in soup.stripped_strings)
 
             return text
         except Exception as e:
-            raise ValueError(f'HTML processing failed: {str(e)}') from e
+            raise ValueError(f"HTML processing failed: {str(e)}") from e

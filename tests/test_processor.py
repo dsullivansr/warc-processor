@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -31,12 +32,15 @@ def main() -> None:
         sys.exit(1)
 
     logger.info("Processing WARC file: %s", warc_path)
-    logger.info("File size: %.2f MB",
-                os.path.getsize(warc_path) / (1024 * 1024))
+    logger.info(
+        "File size: %.2f MB", os.path.getsize(warc_path) / (1024 * 1024)
+    )
 
     # Create output path in same directory as input
-    output_path = os.path.join(os.path.dirname(warc_path),
-                               os.path.basename(warc_path) + '.processed.txt')
+    output_path = os.path.join(
+        os.path.dirname(warc_path),
+        os.path.basename(warc_path) + ".processed.txt",
+    )
 
     # Create processor components
     html_processor = BeautifulSoupHtmlProcessor()
@@ -45,10 +49,12 @@ def main() -> None:
     stats = ProcessingStats()
 
     # Create processor with HTML handler
-    processor = WarcProcessor(processors=[html_processor],
-                              output_writer=output_writer,
-                              record_parser=record_parser,
-                              stats=stats)
+    processor = WarcProcessor(
+        processors=[html_processor],
+        output_writer=output_writer,
+        record_parser=record_parser,
+        stats=stats,
+    )
 
     try:
         # Process the file
@@ -83,9 +89,10 @@ def log_stats(stats: ProcessingStats) -> None:
     logger.info("Records skipped: %d", stats.records_skipped)
     logger.info("Bytes processed: %d", stats.bytes_processed)
     processing_time = stats.get_processing_time()
-    logger.info("Processing time: %.2f seconds",
-                processing_time.total_seconds())
+    logger.info(
+        "Processing time: %.2f seconds", processing_time.total_seconds()
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

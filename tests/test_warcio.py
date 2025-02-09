@@ -10,12 +10,12 @@ def process_warc(warc_path: str) -> None:
     print(f"Processing: {warc_path}")
 
     try:
-        with open(warc_path, 'rb') as stream:
+        with open(warc_path, "rb") as stream:
             for record in ArchiveIterator(stream):
                 print("\nRecord:")
                 print(f"Type: {record.rec_type}")
                 print(f"Headers: {record.rec_headers}")
-                if record.rec_type == 'response':
+                if record.rec_type == "response":
                     print("Content:")
                     content = record.content_stream().read()
                     print(f"Length: {len(content)} bytes")
@@ -32,7 +32,7 @@ def process_warc(warc_path: str) -> None:
         print(f"I/O error: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python test_warcio.py <warc_file>")
         sys.exit(1)
