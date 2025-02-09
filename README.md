@@ -217,3 +217,5 @@ Enable verbose logging with `-v` to see detailed error messages.
 ## License
 
 MIT License
+
+CI/CD workflows updated as of 2025-02-09.
