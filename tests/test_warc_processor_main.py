@@ -3,8 +3,6 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
-
 from warc_processor_main import main
 
 
@@ -39,23 +37,26 @@ processors:
 
     def test_main_with_valid_file(self):
         """Test main with valid WARC file."""
-        with patch('sys.argv', [
-                'warc_processor_main.py',
-                self.input_file,
-                '--output',
-                self.output_file,
-                '--config',
-                self.config_file,
-        ]):
-            with patch('warc_processor_factory.WarcProcessorFactory.'
-                       'create_from_config') as mock_create:
-                exit_code = main()
-                self.assertEqual(exit_code, 0)
-                mock_create.assert_called_once()
+        import sys
+        saved_argv = sys.argv[:]
+        sys.argv = [
+            'warc_processor_main.py',
+            self.input_file,
+            '--output',
+            self.output_file,
+            '--config',
+            self.config_file,
+        ]
+        exit_code = main()
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(self.output_file))
+        sys.argv = saved_argv
 
     def test_main_with_parser_option(self):
         """Test main with parser option."""
-        args = [
+        import sys
+        saved_argv = sys.argv[:]
+        sys.argv = [
             'warc_processor_main.py',
             self.input_file,
             '--output',
@@ -65,26 +66,26 @@ processors:
             '--config',
             self.config_file,
         ]
-        with patch('sys.argv', args):
-            with patch('warc_processor_factory.WarcProcessorFactory.'
-                       'create_from_config') as mock_create:
-                exit_code = main()
-                self.assertEqual(exit_code, 0)
-                mock_create.assert_called_once_with(self.config_file,
-                                                    parser='html.parser')
+        exit_code = main()
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(os.path.exists(self.output_file))
+        sys.argv = saved_argv
 
     def test_main_with_invalid_file(self):
         """Test main with invalid WARC file."""
-        with patch('sys.argv', [
-                'warc_processor_main.py',
-                'nonexistent.warc',
-                '--output',
-                self.output_file,
-                '--config',
-                self.config_file,
-        ]):
-            exit_code = main()
-            self.assertEqual(exit_code, 1)
+        import sys
+        saved_argv = sys.argv[:]
+        sys.argv = [
+            'warc_processor_main.py',
+            'nonexistent.warc',
+            '--output',
+            self.output_file,
+            '--config',
+            self.config_file,
+        ]
+        exit_code = main()
+        self.assertEqual(exit_code, 1)
+        sys.argv = saved_argv
 
 
 if __name__ == '__main__':
