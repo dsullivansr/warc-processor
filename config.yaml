@@ -1,6 +1,0 @@
-processors:
-  - class: BeautifulSoupHtmlProcessor
-    config:
-      parser: html5lib  # default parser, can be overridden by CLI
-  - class: LexborHtmlProcessor
-    config: {}

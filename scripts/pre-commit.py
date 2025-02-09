@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+import os
+import sys
+import subprocess
+import shutil
+
+if not os.getenv("VIRTUAL_ENV"):
+    venv_path = os.path.join(os.getcwd(), 'venv')
+    if not os.path.exists(venv_path):
+        print("Creating virtual environment...")
+        subprocess.check_call([sys.executable, '-m', 'venv', 'venv'])
+    print("Installing development dependencies in virtual environment...")
+    subprocess.check_call([os.path.join(venv_path, 'bin', 'pip'), 'install', '-r', 'requirements-dev.txt'])
+    print("Re-executing pre-commit hook with virtual environment's python...")
+    os.execv(os.path.join(venv_path, 'bin', 'python'), [os.path.join(venv_path, 'bin', 'python')] + sys.argv)
+
 """Git pre-commit hook for WARC processor.
 
 This script runs before each commit and:
@@ -37,15 +52,10 @@ def run_command(cmd: List[str], cwd: str = None) -> Tuple[int, str, str]:
 
 
 def check_dependencies() -> bool:
-    """Check if required tools are installed.
-
-    Returns:
-        True if all dependencies are present, False otherwise
-    """
+    """Check if required tools are installed. Returns True if all dependencies are present, False otherwise."""
     required_tools = ['yapf', 'pylint', 'pytest']
     for tool in required_tools:
-        code, _, _ = run_command(['which', tool])
-        if code != 0:
+        if not shutil.which(tool):
             print(f"Error: {tool} not found. Please install it with pip.")
             return False
     return True
@@ -173,3 +183,5 @@ def main() -> int:
 
 if __name__ == '__main__':
     sys.exit(main())
+
+# trivial commit test

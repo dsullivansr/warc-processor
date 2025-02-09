@@ -10,24 +10,24 @@ from component_loader import ComponentLoader
 
 
 # Test interfaces and components
-class TestInterface(ABC):
-    """Test interface for component loading."""
+class AbstractTestInterface(ABC):
+    """Abstract test interface for component loading."""
 
     @abstractmethod
     def process(self) -> str:
         """Process something."""
 
 
-class ValidComponent(TestInterface):
-    """Valid component that implements TestInterface."""
+class ValidComponent(AbstractTestInterface):
+    """Valid component that implements AbstractTestInterface."""
 
     def process(self) -> str:
         """Process something."""
         return "valid"
 
 
-class AnotherValidComponent(TestInterface):
-    """Another valid component that implements TestInterface."""
+class AnotherValidComponent(AbstractTestInterface):
+    """Another valid component that implements AbstractTestInterface."""
 
     def process(self) -> str:
         """Process something."""
@@ -35,7 +35,7 @@ class AnotherValidComponent(TestInterface):
 
 
 class InvalidComponent:
-    """Invalid component that doesn't implement TestInterface."""
+    """Invalid component that doesn't implement AbstractTestInterface."""
 
     def something_else(self) -> None:
         """Do something else."""
@@ -110,7 +110,7 @@ this is not valid python
         """Test loading components."""
         components = ComponentLoader.load_components(
             self.test_dir,
-            TestInterface,
+            AbstractTestInterface,
         )
 
         # Should find both valid components
@@ -129,19 +129,19 @@ this is not valid python
         empty_dir = tempfile.mkdtemp()
         self.addCleanup(lambda: os.rmdir(empty_dir))
 
-        components = ComponentLoader.load_components(empty_dir, TestInterface)
+        components = ComponentLoader.load_components(empty_dir, AbstractTestInterface)
         self.assertEqual(len(components), 0)
 
     def test_load_components_nonexistent_directory(self):
         """Test loading from nonexistent directory."""
         with self.assertRaises(ValueError):
-            ComponentLoader.load_components("/nonexistent/dir", TestInterface)
+            ComponentLoader.load_components("/nonexistent/dir", AbstractTestInterface)
 
     def test_load_components_with_errors(self):
         """Test loading components with some files containing errors."""
         components = ComponentLoader.load_components(
             self.test_dir,
-            TestInterface,
+            AbstractTestInterface,
         )
 
         # Should still find valid components despite errors in other files
