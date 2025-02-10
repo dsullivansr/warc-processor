@@ -54,18 +54,15 @@ class TestRealWarc(unittest.TestCase):
             output_path = temp_file.name
 
         try:
-            # Process WARC file
+            # Process WARC file using existing method
             start_time = datetime.now()
-            processor = WarcProcessorFactory.create_from_config(
-                self.config_file
-            )
-            stats = processor.process_warc_file(warc_path, output_path)
+            factory = WarcProcessorFactory()
+            processor = factory.create({"class": "BeautifulSoupHtmlProcessor"})
+            processor.process(warc_path, output_path)
 
-            # Print processing stats
+            # Calculate processing time
             duration = (datetime.now() - start_time).total_seconds()
             print(f"Processing time: {duration:.1f} seconds")
-            print(f"Records processed: {stats.records_processed}")
-            print(f"Records skipped: {stats.records_skipped}")
 
             # Verify output was created
             self.assertTrue(os.path.exists(output_path))

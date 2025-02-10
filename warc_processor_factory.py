@@ -1,53 +1,51 @@
-"""Factory for creating WarcProcessor instances."""
-
+import importlib
 import logging
 import os
-import yaml
-from typing import List, Optional
 
-from processors.lexbor_html_processor import LexborHtmlProcessor
-from processing_stats import ProcessingStats
-from warc_processor import WarcProcessor
-from warc_record_parser import WarcRecordParser
-from warc_record_processor import WarcRecordProcessor
-from writers.plain_text_writer import PlainTextWriter
-
-logger = logging.getLogger(__name__)
+from typing import Any, Dict, List
 
 
 class WarcProcessorFactory:
-    """Factory for creating WarcProcessor instances."""
+    """Factory class for creating WARC processors."""
 
-    @staticmethod
-    def create(
-        *,
-        processors: Optional[List[WarcRecordProcessor]] = None,
-        record_parser: Optional[WarcRecordParser] = None,
-        output_writer: Optional[PlainTextWriter] = None,
-        stats: Optional[ProcessingStats] = None
-    ) -> WarcProcessor:
-        """Create a WarcProcessor instance with optional custom components.
+    def __init__(self) -> None:
+        self.processors: Dict[str, Any] = {}
 
-        Args:
-            processors: List of WarcRecordProcessor instances (default: empty list)
-            record_parser: Optional custom WarcRecordParser (default: WarcRecordParser())
-            output_writer: Optional custom OutputWriter (default: PlainTextWriter())
-            stats: Optional custom ProcessingStats instance (default: ProcessingStats())
-
-        Returns:
-            Configured WarcProcessor instance
+    def create(self, processor_config: Dict[str, Any]) -> Any:
         """
-        if not processors:
-            processors = [LexborHtmlProcessor()]
-        if record_parser is None:
-            record_parser = WarcRecordParser()
-        if output_writer is None:
-            output_writer = PlainTextWriter()
-        if stats is None:
-            stats = ProcessingStats()
-        return WarcProcessor(
-            record_parser=record_parser,
-            processors=processors,
-            output_writer=output_writer,
-            stats=stats,
-        )
+        Creates a processor based on the given configuration.
+        """
+        logging.debug("Creating processor: %s", processor_config)
+
+        # Load the module
+        try:
+            module_name = processor_config["class"].split(".")[0]
+            module = importlib.import_module(module_name)
+        except ImportError as e:
+            logging.error("Could not import module %s: %s", module_name, e)
+            raise
+
+        # Load the class
+        processor_class = getattr(module, processor_config["class"], None)
+        if processor_class is None:
+            raise AttributeError(
+                f"Module '{module_name}' has no attribute '{processor_config['class']}'"
+            )
+
+        if "config" in processor_config:
+            config = processor_config["config"]
+            processor = processor_class(**config)
+        else:
+            processor = processor_class()
+
+        return processor
+
+    def get_available_processors(self, directory: str) -> List[str]:
+        """Gets all available processors in the given directory."""
+        processors_list: List[str] = []
+        for filename in os.listdir(directory):
+            if filename.endswith(".py") and filename != "__init__.py":
+                processors_list.append(filename[:-3])
+
+        logging.debug("Available processors: %s", processors_list)
+        return processors_list

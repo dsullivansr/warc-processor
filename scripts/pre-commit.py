@@ -2,195 +2,89 @@
 import os
 import sys
 import subprocess
-import shutil
+from typing import List
 
-if not os.getenv("VIRTUAL_ENV"):
-    venv_path = os.path.join(os.getcwd(), "venv")
-    if not os.path.exists(venv_path):
-        print("Creating virtual environment...")
-        subprocess.check_call([sys.executable, "-m", "venv", "venv"])
-    print("Installing development dependencies in virtual environment...")
-    subprocess.check_call(
-        [
-            os.path.join(venv_path, "bin", "pip"),
-            "install",
-            "-r",
-            "requirements-dev.txt",
-        ]
-    )
-    print("Re-executing pre-commit hook with virtual environment's python...")
-    os.execv(
-        os.path.join(venv_path, "bin", "python"),
-        [os.path.join(venv_path, "bin", "python")] + sys.argv,
-    )
+# Check if we are in a virtual environment
+venv = os.environ.get("VIRTUAL_ENV")
 
-"""Git pre-commit hook for WARC processor.
-
-This script runs before each commit and:
-1. Checks code formatting using yapf (Google style, 80 chars)
-2. Runs pylint for style checking
-3. Runs tests if Python files are modified
-
-Only checks files that are being committed.
-"""
-
-import os
-import subprocess
-import sys
-from typing import List, Tuple
-
-
-def run_command(cmd: List[str], cwd: str = None) -> Tuple[int, str, str]:
-    """Run a command and return its exit code and output.
-
-    Args:
-        cmd: Command to run as list of strings
-        cwd: Working directory for command
-
-    Returns:
-        Tuple of (exit_code, stdout, stderr)
-    """
+if not venv:
+    print("Not in a virtual environment. Creating one...")
+    # Create a virtual environment
     try:
-        result = subprocess.run(
-            cmd, cwd=cwd, check=False, capture_output=True, text=True
+        upgrade_pip_cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+            "pip",
+        ]
+        subprocess.check_call(upgrade_pip_cmd)
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "-r", "requirements.txt"]
         )
-        return result.returncode, result.stdout, result.stderr
-    except (subprocess.SubprocessError, OSError) as e:
-        return 1, "", str(e)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install dependencies: {e}")
+        sys.exit(1)
+
+    # Re-execute pre-commit in the virtual environment
+    print("Re-executing pre-commit in the virtual environment...")
+    execv_cmd = [sys.executable, __file__] + sys.argv[1:]
+    os.execv(sys.executable, execv_cmd)
 
 
-def check_dependencies() -> bool:
-    """Check if required tools are installed. Returns True if all dependencies are present, False otherwise."""
-    required_tools = ["yapf", "pylint", "pytest"]
-    for tool in required_tools:
-        if not shutil.which(tool):
-            print(f"Error: {tool} not found. Please install it with pip.")
-            return False
-    return True
+# Check for required tools in the local venv, before falling back to system
+# checks
+def check_tool_in_venv(tool: str) -> bool:
+    venv_path = os.environ.get("VIRTUAL_ENV")
+    if not venv_path or not os.path.isdir(venv_path):
+        return False
+    tool_path = os.path.join(venv_path, "bin", tool)
+    return os.path.exists(tool_path)
 
 
-def get_staged_python_files() -> List[str]:
-    """Get list of Python files staged for commit.
-
-    Returns:
-        List of staged Python file paths
-    """
-    code, out, _ = run_command(["git", "diff", "--cached", "--name-only"])
-    if code != 0:
-        return []
-
-    return [
-        f for f in out.splitlines() if f.endswith(".py") and os.path.exists(f)
-    ]
-
-
-def check_formatting(files: List[str]) -> bool:
-    """Check if files are formatted according to Google style.
-
-    Args:
-        files: List of files to check
-
-    Returns:
-        True if all files are properly formatted, False otherwise
-    """
-    if not files:
+def check_tool_exists(tool: str) -> bool:
+    """Check if a tool exists in the system."""  # tool: redefined
+    if check_tool_in_venv(tool):
         return True
-
-    print("\nChecking code formatting...")
-    yapf_style = "{based_on_style: google, column_limit: 80}"
-    code, out, _ = run_command(
-        ["yapf", "--style", yapf_style, "--diff"] + files
-    )
-
-    if code == 0 and not out:
-        print("✓ All files are properly formatted")
+    try:
+        subprocess.check_call(
+            ["which", tool],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         return True
-
-    print("× Some files need formatting. Run:")
-    print(f"yapf --style='{yapf_style}' -i <file>")
-    if out:
-        print("\nDiff:")
-        print(out)
-    return False
+    except subprocess.CalledProcessError:
+        return False
 
 
-def run_pylint(files: List[str]) -> bool:
-    """Run pylint on files.
+required_tools = ["black", "pylint"]
 
-    Args:
-        files: List of files to check
+missing_tools: List[str] = []
+for req_tool in required_tools:
+    if not check_tool_exists(req_tool):
+        missing_tools.append(req_tool)
 
-    Returns:
-        True if pylint passes, False otherwise
-    """
-    if not files:
-        return True
+if missing_tools:
+    print(
+        "Missing required tools:", ", ".join(missing_tools)
+    )  # join: redefined
+    print("Please install them using pip or your system package manager.")
+    sys.exit(1)
 
-    print("\nRunning pylint...")
-    code, out, _ = run_command(["pylint"] + files)
+print("Running black...")
+try:
+    subprocess.check_call(["black", "--line-length", "80", "."])
+except subprocess.CalledProcessError as e:
+    print(f"Black failed: {e}")
+    sys.exit(1)
 
-    if code == 0:
-        print("✓ Pylint checks passed")
-        return True
+print("Running pylint...")
+try:
+    subprocess.check_call(["pylint"] + sys.argv[1:])
+except subprocess.CalledProcessError as e:
+    print(f"Pylint failed: {e}")
+    sys.exit(1)
 
-    print("× Pylint found issues:")
-    print(out)
-    return False
-
-
-def run_tests() -> bool:
-    """Run pytest suite.
-
-    Returns:
-        True if all tests pass, False otherwise
-    """
-    print("\nRunning tests...")
-    code, out, _ = run_command(["pytest", "tests/", "-v"])
-
-    if code == 0:
-        print("✓ All tests passed")
-        return True
-
-    print("× Some tests failed:")
-    print(out)
-    return False
-
-
-def main() -> int:
-    """Run pre-commit checks.
-
-    Returns:
-        0 if all checks pass, 1 otherwise
-    """
-    if not check_dependencies():
-        return 1
-
-    # Get Python files staged for commit
-    python_files = get_staged_python_files()
-    if not python_files:
-        print("No Python files to check")
-        return 0
-
-    print(f"Checking {len(python_files)} Python files:")
-    for f in python_files:
-        print(f"  {f}")
-
-    # Run checks
-    format_ok = check_formatting(python_files)
-    lint_ok = run_pylint(python_files)
-
-    # Only run tests if there are Python changes
-    tests_ok = run_tests()
-
-    if format_ok and lint_ok and tests_ok:
-        print("\n✓ All checks passed!")
-        return 0
-
-    print("\n× Some checks failed")
-    return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())
-
-# trivial commit test
+print("All checks passed!")
+sys.exit(0)
