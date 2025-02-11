@@ -29,8 +29,7 @@ class TestWarcProcessorFactory(unittest.TestCase):
         self.assertIsInstance(processor.output_writer, PlainTextWriter)
         self.assertIsInstance(processor.record_parser, WarcRecordParser)
         self.assertIsInstance(processor.stats, ProcessingStats)
-        self.assertEqual(len(processor.processors), 1)
-        self.assertIsInstance(processor.processors[0], LexborHtmlProcessor)
+        self.assertIsInstance(processor.processor, LexborHtmlProcessor)
 
     def test_json_writer_creation(self):
         """Test creating processor with JSON writer."""
@@ -42,7 +41,7 @@ class TestWarcProcessorFactory(unittest.TestCase):
         processor = self.factory.create(
             processors=RecordProcessors.LEXBOR
         )
-        self.assertIsInstance(processor.processors[0], LexborHtmlProcessor)
+        self.assertIsInstance(processor.processor, LexborHtmlProcessor)
 
     def test_beautiful_soup_processors(self):
         """Test creating processor with BeautifulSoup processors."""
@@ -51,7 +50,7 @@ class TestWarcProcessorFactory(unittest.TestCase):
             processors=RecordProcessors.BEAUTIFUL_SOUP_HTML5
         )
         self.assertIsInstance(
-            processor.processors[0], BeautifulSoupHtmlProcessor
+            processor.processor, BeautifulSoupHtmlProcessor
         )
 
         # Test lxml parser
@@ -59,7 +58,7 @@ class TestWarcProcessorFactory(unittest.TestCase):
             processors=RecordProcessors.BEAUTIFUL_SOUP_LXML
         )
         self.assertIsInstance(
-            processor.processors[0], BeautifulSoupHtmlProcessor
+            processor.processor, BeautifulSoupHtmlProcessor
         )
 
         # Test built-in parser
@@ -67,7 +66,7 @@ class TestWarcProcessorFactory(unittest.TestCase):
             processors=RecordProcessors.BEAUTIFUL_SOUP_BUILTIN
         )
         self.assertIsInstance(
-            processor.processors[0], BeautifulSoupHtmlProcessor
+            processor.processor, BeautifulSoupHtmlProcessor
         )
 
     def test_text_writer(self):

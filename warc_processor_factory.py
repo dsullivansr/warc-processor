@@ -40,15 +40,15 @@ class WarcProcessorFactory:
             stats: Processing stats instance or StatsTypes enum.
                 Defaults to StatsTypes.DEFAULT.
         """
-        # Create components from enums
+        # Create processor from enum
         if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
-            processor_list = [LexborHtmlProcessor()]
+            processor = LexborHtmlProcessor()
         elif processors == RecordProcessors.BEAUTIFUL_SOUP_LXML:
-            processor_list = [BeautifulSoupHtmlProcessor(parser='lxml')]
+            processor = BeautifulSoupHtmlProcessor(parser='lxml')
         elif processors == RecordProcessors.BEAUTIFUL_SOUP_HTML5:
-            processor_list = [BeautifulSoupHtmlProcessor(parser='html5lib')]
+            processor = BeautifulSoupHtmlProcessor(parser='html5lib')
         elif processors == RecordProcessors.BEAUTIFUL_SOUP_BUILTIN:
-            processor_list = [BeautifulSoupHtmlProcessor(parser='html.parser')]
+            processor = BeautifulSoupHtmlProcessor(parser='html.parser')
         else:
             raise ValueError(f"Unknown processor type: {processors}")
 
@@ -70,7 +70,7 @@ class WarcProcessorFactory:
             raise ValueError(f"Unknown stats type: {stats}")
 
         return WarcProcessor(
-            processors=processor_list,
+            processor=processor,
             output_writer=writer,
             record_parser=parser,
             stats=stats_instance
