@@ -32,8 +32,10 @@ ENV/
 
 # Testing
 .coverage
+coverage.xml
 htmlcov/
 .pytest_cache/
+junit/
 
 # Profiling data
 profiling/
