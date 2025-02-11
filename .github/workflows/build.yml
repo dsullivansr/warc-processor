@@ -92,8 +92,8 @@ jobs:
           RELEASE_DIR="dist/${RELEASE_NAME}"
           cp dist/warc-processor "${RELEASE_DIR}/"
 
-          cp README.md "${RELEASE_DIR}/"
-          cp LICENSE "${RELEASE_DIR}/"
+          [ -f README.md ] && cp README.md "${RELEASE_DIR}/" || echo "No README.md found"
+          [ -f LICENSE ] && cp LICENSE "${RELEASE_DIR}/" || echo "No LICENSE found"
           cat > "${RELEASE_DIR}/QUICKSTART.md" << 'EOF'
           # WARC Processor Quick Start Guide
 
