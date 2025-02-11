@@ -1,3 +1,3 @@
 """Version information."""
 
-__version__ = "${NEW_VERSION}"
+__version__ = "0.1.0"
