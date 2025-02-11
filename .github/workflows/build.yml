@@ -27,11 +27,11 @@ jobs:
           
       - name: Run yapf
         run: |
-          yapf --diff --recursive warc_processor tests
+          python -m yapf --diff --recursive warc_processor tests
           
       - name: Run pylint
         run: |
-          pylint --rcfile=.pylintrc warc_processor tests
+          python -m pylint --rcfile=.pylintrc warc_processor tests
           
       - name: Run pytest
         run: |
