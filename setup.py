@@ -15,6 +15,7 @@ setup(
     install_requires=[
         "warcio",
         "beautifulsoup4",
+        "selectolax",
     ],
     extras_require={
         "dev": [
