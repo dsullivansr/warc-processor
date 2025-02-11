@@ -36,7 +36,7 @@ class TestRealWarc(unittest.TestCase):
             # Process WARC file using existing method
             start_time = datetime.now()
             factory = WarcProcessorFactory()
-            processor = factory.create(processor_type="BeautifulSoupHtmlProcessor")
+            processor = factory.create()
             processor.process_warc_file(warc_path, output_path)
 
             # Calculate processing time
