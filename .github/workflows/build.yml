@@ -8,10 +8,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           
@@ -22,17 +22,16 @@ jobs:
           pip install -r requirements-dev.txt
           
       - name: Run yapf
-        uses: dsullivansr/actions/yapf@main
-        
+        run: |
+          yapf --diff --recursive warc_processor tests
+          
       - name: Run pylint
-        uses: dsullivansr/actions/pylint@main
-        with:
-          rcfile: .pylintrc
+        run: |
+          pylint --rcfile=.pylintrc warc_processor tests
           
       - name: Run pytest
-        uses: dsullivansr/actions/pytest@main
-        with:
-          coverage: warc_processor
+        run: |
+          pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=warc_processor --cov-report=xml
           
       - name: Build binary
         run: |
