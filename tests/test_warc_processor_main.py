@@ -9,6 +9,7 @@ class TestWarcProcessorMain(unittest.TestCase):
     def setUp(self):
         """Set up test case."""
         self.test_file = "test_warc_processor.warc"
+        self.output_file = "test_warc_processor.txt"
         self.test_content = (
             b"WARC/1.0\r\n"
             b"WARC-Type: warcinfo\r\n"
@@ -26,6 +27,11 @@ class TestWarcProcessorMain(unittest.TestCase):
         with self.assertRaises(SystemExit):
             main([])
 
+    def test_main_requires_output_argument(self):
+        """Test that main requires the --output argument."""
+        with self.assertRaises(SystemExit):
+            main(['--input', self.test_file])
+
     def test_main_processes_input_file(self):
         """Test that main processes the input file successfully."""
         mock_processor = unittest.mock.MagicMock()
@@ -34,12 +40,15 @@ class TestWarcProcessorMain(unittest.TestCase):
             'warc_processor_factory.WarcProcessor', return_value=mock_processor
         ):
             # Run the main function
-            result = main(['--input', self.test_file])
+            result = main([
+                '--input', self.test_file,
+                '--output', self.output_file
+            ])
 
             # Verify the results
             self.assertEqual(result, 0)
             mock_processor.process_warc_file.assert_called_once_with(
-                self.test_file, self.test_file + '.txt'
+                self.test_file, self.output_file
             )
 
     def test_main_handles_processing_error(self):
@@ -53,12 +62,15 @@ class TestWarcProcessorMain(unittest.TestCase):
             'warc_processor_factory.WarcProcessor', return_value=mock_processor
         ):
             # Run the main function
-            result = main(['--input', self.test_file])
+            result = main([
+                '--input', self.test_file,
+                '--output', self.output_file
+            ])
 
             # Verify the results
             self.assertEqual(result, 1)
             mock_processor.process_warc_file.assert_called_once_with(
-                self.test_file, self.test_file + '.txt'
+                self.test_file, self.output_file
             )
 
 
