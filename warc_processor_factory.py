@@ -19,9 +19,7 @@ class WarcProcessorFactory:
         self,
         *,
         processors: RecordProcessors = RecordProcessors.DEFAULT,
-        output_writer: OutputWriters = OutputWriters.DEFAULT,
-        record_parser=None,
-        stats=None
+        output_writer: OutputWriters = OutputWriters.DEFAULT
     ) -> WarcProcessor:
         """Creates a WarcProcessor with specified configuration.
 
@@ -30,8 +28,7 @@ class WarcProcessorFactory:
                 Defaults to RecordProcessors.LEXBOR.
             output_writer: Output writer instance or OutputWriters enum.
                 Defaults to OutputWriters.PLAIN_TEXT.
-            record_parser: Optional record parser instance.
-            stats: Optional stats instance.
+
         """
         # Create processor from enum
         if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
@@ -52,8 +49,8 @@ class WarcProcessorFactory:
         else:
             raise ValueError(f"Unknown writer type: {output_writer}")
 
-        parser = record_parser or WarcRecordParser()
-        stats_instance = stats or ProcessingStats()
+        parser = WarcRecordParser()
+        stats_instance = ProcessingStats()
 
         return WarcProcessor(
             processor=processor,
