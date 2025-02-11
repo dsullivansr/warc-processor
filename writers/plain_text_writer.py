@@ -89,6 +89,8 @@ class PlainTextWriter(OutputWriter):
             f.write(f"WARC-Date: {record.record.date_str}\n")
             f.write(f"WARC-Target-URI: {record.record.target_uri}\n")
             f.write(f"Content-Type: {record.record.content_type}\n")
+            content_length = len(record.processed_content.encode('utf-8'))
+            f.write(f"Content-Length: {content_length}\n")
 
             # Write payload digest if present
             if record.record.payload_digest:
@@ -108,6 +110,9 @@ class PlainTextWriter(OutputWriter):
                     "warc-payload-digest",
                 ]:
                     f.write(f"{key}: {value}\n")
+
+            # Write processed content
+            f.write(f"\n{record.processed_content}\n\n")
 
             # Add content length header for the processed content
             content_length = len(record.processed_content.encode("utf-8"))
