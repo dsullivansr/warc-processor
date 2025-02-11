@@ -62,9 +62,12 @@ class LexborHtmlProcessor(WarcRecordProcessor):
             for node in parser.css('script, style'):
                 node.decompose()
 
-            # Extract text content
-            text = parser.root.text()
-            return " ".join(text.split())
+            # Extract text content from each text node
+            text_nodes = []
+            for node in parser.root.traverse():
+                if node.text(deep=False, strip=True):
+                    text_nodes.append(node.text(deep=False, strip=True))
+            return " ".join(text_nodes)
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Failed to parse HTML: %s", str(e))
             raise ValueError(f"Failed to parse HTML: {str(e)}") from e
