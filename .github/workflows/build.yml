@@ -21,9 +21,18 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           
-      - name: Run tests
-        run: |
-          pytest tests/ --cov=warc_processor
+      - name: Run yapf
+        uses: dsullivansr/actions/yapf@main
+        
+      - name: Run pylint
+        uses: dsullivansr/actions/pylint@main
+        with:
+          rcfile: .pylintrc
+          
+      - name: Run pytest
+        uses: dsullivansr/actions/pytest@main
+        with:
+          coverage: warc_processor
           
       - name: Build binary
         run: |
