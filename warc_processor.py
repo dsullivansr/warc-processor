@@ -1,6 +1,7 @@
 """Process WARC files."""
 
 import logging
+import os
 from typing import List, Optional
 
 from warcio.archiveiterator import ArchiveIterator
@@ -38,23 +39,45 @@ class WarcProcessor:
         self.stats = stats
 
     def process_warc_file(
-        self, input_path: str, output_path: str
+        self,
+        input_path: str,
+        output_path: str,
+        overwrite: bool = False
     ) -> ProcessingStats:
         """Process a WARC file.
 
         Args:
             input_path: Path to input WARC file
             output_path: Path to output file
+            overwrite: If True, overwrite existing output file.
+                Default is False.
 
         Returns:
             Processing statistics
+
+        Raises:
+            FileExistsError: If output file exists and overwrite is False
         """
         if not input_path:
             logger.error("No input file provided")
-            return self.stats
+            raise ValueError("No input file provided")
+
+        if not output_path:
+            logger.error("No output path provided")
+            raise ValueError("No output path provided")
+
+        # Check if output file exists
+        if os.path.exists(output_path) and not overwrite:
+            logger.error("Output file already exists: %s", output_path)
+            raise FileExistsError(
+                f"Output file already exists: {output_path}. "
+                "Use overwrite=True to overwrite."
+            )
 
         try:
-            self.output_writer.configure(output_path)
+            self.output_writer.configure(
+            output_path
+        )
             self.stats.start_processing(input_path)
             self._process_records_from_file(input_path)
         except (IOError, OSError) as e:

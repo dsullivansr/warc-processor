@@ -1,6 +1,8 @@
 """Tests for WarcProcessor."""
 
 import io
+import os
+import tempfile
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
@@ -43,6 +45,9 @@ class TestWarcProcessor(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.output_path = os.path.join(self.temp_dir, "output.txt")
+
         self.mock_processor = MagicMock(spec=WarcRecordProcessor)
         self.mock_output_writer = MagicMock(spec=OutputWriter)
         self.mock_record_parser = MagicMock(spec=WarcRecordParser)
@@ -54,6 +59,14 @@ class TestWarcProcessor(unittest.TestCase):
             record_parser=self.mock_record_parser,
             stats=self.mock_stats,
         )
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        # Clean up temporary directory
+        if os.path.exists(self.temp_dir):
+            for file in os.listdir(self.temp_dir):
+                os.remove(os.path.join(self.temp_dir, file))
+            os.rmdir(self.temp_dir)
 
     def create_record(self, content="test content", content_type=None):
         """Create a test WARC record."""
@@ -131,6 +144,53 @@ class TestWarcProcessor(unittest.TestCase):
 
         self.assertIsNone(result)
         self.mock_processor.can_process.assert_not_called()
+
+    def test_process_warc_file_no_input(self):
+        """Test processing with no input file."""
+        with self.assertRaises(ValueError) as cm:
+            self.processor.process_warc_file("", "output.txt")
+        self.assertEqual(str(cm.exception), "No input file provided")
+
+    def test_process_warc_file_no_output(self):
+        """Test processing with no output file."""
+        with self.assertRaises(ValueError) as cm:
+            self.processor.process_warc_file("input.warc", "")
+        self.assertEqual(str(cm.exception), "No output path provided")
+
+    def test_process_warc_file_existing_output(self):
+        """Test processing with existing output file and no overwrite."""
+        # Create output file
+        with open(self.output_path, "w", encoding="utf-8") as f:
+            f.write("existing content")
+
+        with self.assertRaises(FileExistsError) as cm:
+            self.processor.process_warc_file("input.warc", self.output_path)
+        self.assertEqual(
+            str(cm.exception),
+            f"Output file already exists: {self.output_path}. "
+            "Use overwrite=True to overwrite."
+        )
+
+    @patch("builtins.open", create=True)
+    def test_process_warc_file_existing_output_with_overwrite(self, mock_open):
+        """Test processing with existing output file and overwrite=True."""
+        # Create output file
+        with open(self.output_path, "w", encoding="utf-8") as f:
+            f.write("existing content")
+
+        # Mock the file processing
+        mock_file = io.BytesIO()
+        mock_open.return_value.__enter__.return_value = mock_file
+        self.mock_record_parser.parse.return_value = None
+
+        # Should not raise FileExistsError
+        self.processor.process_warc_file(
+            "input.warc", self.output_path, overwrite=True
+        )
+
+        # Verify stats were tracked
+        self.mock_stats.start_processing.assert_called_once_with("input.warc")
+        self.mock_stats.finish_processing.assert_called_once()
 
     @patch("builtins.open", create=True)
     def test_process_warc_file(self, mock_open):

@@ -37,7 +37,7 @@ class TestRealWarc(unittest.TestCase):
             start_time = datetime.now()
             factory = WarcProcessorFactory()
             processor = factory.create()
-            processor.process_warc_file(warc_path, output_path)
+            processor.process_warc_file(warc_path, output_path, overwrite=True)
 
             # Calculate processing time
             duration = (datetime.now() - start_time).total_seconds()
