@@ -3,7 +3,7 @@
 
 import logging
 
-import lxml.html  # pylint: disable=no-member
+from selectolax.lexbor import LexborHTMLParser
 
 from models.warc_record import WarcRecord
 from warc_record_processor import WarcRecordProcessor
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class LexborHtmlProcessor(WarcRecordProcessor):
-    """HTML processor that uses Lexbor for parsing."""
+    """HTML processor that uses the Lexbor engine for parsing."""
 
     def can_process(self, content_type) -> bool:
         """Check if this processor can handle the record or content type.
@@ -21,7 +21,7 @@ class LexborHtmlProcessor(WarcRecordProcessor):
         For XHTML content, use BeautifulSoupHtmlProcessor.
 
         Args:
-            record_or_type: WARC record or ContentType to check
+            content_type: WARC record or ContentType to check
 
         Returns:
             True if this processor can handle the record
@@ -55,15 +55,15 @@ class LexborHtmlProcessor(WarcRecordProcessor):
             raise ValueError("Content is empty or whitespace")
 
         try:
-            # Parse HTML
-            doc = lxml.html.fromstring(processor_input.content)
+            # Parse HTML using Lexbor
+            parser = LexborHTMLParser(processor_input.content)
 
             # Remove script and style elements
-            for element in doc.xpath("//script | //style"):
-                element.getparent().remove(element)
+            for node in parser.css('script, style'):
+                node.decompose()
 
             # Extract text content
-            text = " ".join(doc.xpath("//text()"))
+            text = parser.root.text()
             return " ".join(text.split())
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Failed to parse HTML: %s", str(e))
