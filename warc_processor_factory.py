@@ -6,6 +6,7 @@ from warc_record_parser import WarcRecordParser
 from output_writer import OutputWriter
 from processing_stats import ProcessingStats
 from writers.plain_text_writer import PlainTextWriter
+from writers.json_writer import JsonWriter
 from processors.lexbor_html_processor import LexborHtmlProcessor
 
 
@@ -22,7 +23,8 @@ class WarcProcessorFactory:
         processors: Optional[List[WarcRecordProcessor]] = None,
         output_writer: Optional[OutputWriter] = None,
         record_parser: Optional[WarcRecordParser] = None,
-        stats: Optional[ProcessingStats] = None
+        stats: Optional[ProcessingStats] = None,
+        output_format: str = "text"
     ) -> WarcProcessor:
         """Creates a WarcProcessor with default configuration.
 
@@ -46,7 +48,10 @@ class WarcProcessorFactory:
 
         # Use defaults for other components if not provided
         if output_writer is None:
-            output_writer = PlainTextWriter()
+            if output_format.lower() == "json":
+                output_writer = JsonWriter()
+            else:
+                output_writer = PlainTextWriter()
         if record_parser is None:
             record_parser = WarcRecordParser()
         if stats is None:

@@ -23,6 +23,12 @@ def main(args=None):
         action="store_true",
         help="Overwrite output file if it exists"
     )
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)"
+    )
 
     args = parser.parse_args(args)
 
@@ -42,7 +48,7 @@ def main(args=None):
         sys.exit(1)
 
     try:
-        warc_processor = WarcProcessorFactory().create()
+        warc_processor = WarcProcessorFactory().create(output_format=args.format)
         # Create output directory if it doesn't exist
         output_dir = os.path.dirname(output_file)
         if output_dir:
