@@ -10,9 +10,16 @@ from warcio.statusandheaders import StatusAndHeaders
 # Add project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Create test_data directory in functional tests
+test_data_dir = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "tests", "functional", "test_data"
+)
+os.makedirs(test_data_dir, exist_ok=True)
+
 # Create test WARC file
-with open("test_data/sample.warc", "wb") as output:
-    writer = WARCWriter(output, gzip=False)
+warc_path = os.path.join(test_data_dir, "sample.warc.gz")
+with open(warc_path, "wb") as output:
+    writer = WARCWriter(output, gzip=True)
 
     # Create response record
     headers_list = [
