@@ -1,13 +1,16 @@
-from typing import List, Optional
-
 from warc_processor import WarcProcessor
-from warc_record_processor import WarcRecordProcessor
 from warc_record_parser import WarcRecordParser
-from output_writer import OutputWriter
 from processing_stats import ProcessingStats
 from writers.plain_text_writer import PlainTextWriter
 from writers.json_writer import JsonWriter
 from processors.lexbor_html_processor import LexborHtmlProcessor
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from warc_processor_types import (
+    OutputWriters,
+    RecordProcessors,
+    RecordParsers,
+    ProcessingStats as StatsTypes
+)
 
 
 class WarcProcessorFactory:
@@ -20,46 +23,55 @@ class WarcProcessorFactory:
     def create(
         self,
         *,
-        processors: Optional[List[WarcRecordProcessor]] = None,
-        output_writer: Optional[OutputWriter] = None,
-        record_parser: Optional[WarcRecordParser] = None,
-        stats: Optional[ProcessingStats] = None,
-        output_format: str = "text"
+        processors: RecordProcessors = RecordProcessors.DEFAULT,
+        output_writer: OutputWriters = OutputWriters.DEFAULT,
+        record_parser: RecordParsers = RecordParsers.DEFAULT,
+        stats: StatsTypes = StatsTypes.DEFAULT
     ) -> WarcProcessor:
-        """Creates a WarcProcessor with default configuration.
+        """Creates a WarcProcessor with specified configuration.
 
         Args:
-            processors: Optional list of record processors. If not provided,
-                will be
-                determined by processor_type.
-            output_writer: Optional output writer. If not provided, uses
-                PlainTextWriter.
-            record_parser: Optional record parser. If not provided,
-                uses WarcRecordParser.
-            stats: Optional processing stats. If not provided, uses
-                ProcessingStats.
-            processor_type: Removed. Only Lexbor processor is
-                supported.
+            processors: List of record processors or RecordProcessors enum.
+                Defaults to RecordProcessors.LEXBOR.
+            output_writer: Output writer instance or OutputWriters enum.
+                Defaults to OutputWriters.PLAIN_TEXT.
+            record_parser: Record parser instance or RecordParsers enum.
+                Defaults to RecordParsers.DEFAULT.
+            stats: Processing stats instance or StatsTypes enum.
+                Defaults to StatsTypes.DEFAULT.
         """
-        # Create processor list based on type if not provided
-        if processors is None:
-            # Always use Lexbor
-            processors = [LexborHtmlProcessor()]
+        # Create components from enums
+        if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
+            processor_list = [LexborHtmlProcessor()]
+        elif processors == RecordProcessors.BEAUTIFUL_SOUP_LXML:
+            processor_list = [BeautifulSoupHtmlProcessor(parser='lxml')]
+        elif processors == RecordProcessors.BEAUTIFUL_SOUP_HTML5:
+            processor_list = [BeautifulSoupHtmlProcessor(parser='html5lib')]
+        elif processors == RecordProcessors.BEAUTIFUL_SOUP_BUILTIN:
+            processor_list = [BeautifulSoupHtmlProcessor(parser='html.parser')]
+        else:
+            raise ValueError(f"Unknown processor type: {processors}")
 
-        # Use defaults for other components if not provided
-        if output_writer is None:
-            if output_format.lower() == "json":
-                output_writer = JsonWriter()
-            else:
-                output_writer = PlainTextWriter()
-        if record_parser is None:
-            record_parser = WarcRecordParser()
-        if stats is None:
-            stats = ProcessingStats()
+        if output_writer in (OutputWriters.DEFAULT, OutputWriters.TEXT):
+            writer = PlainTextWriter()
+        elif output_writer == OutputWriters.JSON:
+            writer = JsonWriter()
+        else:
+            raise ValueError(f"Unknown writer type: {output_writer}")
+
+        if record_parser == RecordParsers.DEFAULT:
+            parser = WarcRecordParser()
+        else:
+            raise ValueError(f"Unknown parser type: {record_parser}")
+
+        if stats == StatsTypes.DEFAULT:
+            stats_instance = ProcessingStats()
+        else:
+            raise ValueError(f"Unknown stats type: {stats}")
 
         return WarcProcessor(
-            processors=processors,
-            output_writer=output_writer,
-            record_parser=record_parser,
-            stats=stats
+            processors=processor_list,
+            output_writer=writer,
+            record_parser=parser,
+            stats=stats_instance
         )
