@@ -70,9 +70,17 @@ class WarcProcessor:
         Args:
             input_path: Path to input WARC file
         """
+        total_records = 0
         with open(input_path, "rb") as warc_file:
             for record in ArchiveIterator(warc_file):
+                total_records += 1
+                logger.debug(
+                    "Processing record %d of type %s",
+                    total_records,
+                    record.rec_type
+                )
                 self._process_single_record(record)
+        logger.info("Processed %d total records", total_records)
 
     def _process_single_record(self, record) -> None:
         """Process a single record from the WARC file.
@@ -82,6 +90,11 @@ class WarcProcessor:
         """
         try:
             parsed_record = self.record_parser.parse(record)
+            if parsed_record is None:
+                logger.debug("Skipping record - parser returned None")
+                self.stats.track_skipped_record()
+                return
+
             self.stats.track_parsed_record()
 
             processed_content = self._process_record(parsed_record)

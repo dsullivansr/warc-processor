@@ -49,7 +49,17 @@ class WarcRecordProcessorChain:
         content = record.content
         for processor in self.processors:
             # Check if processor can handle record
+            logger.debug(
+                "Checking if %s can process content type %s",
+                processor.__class__.__name__,
+                record.content_type
+            )
             if not processor.can_process(record):
+                logger.debug(
+                    "%s cannot process content type %s",
+                    processor.__class__.__name__,
+                    record.content_type
+                )
                 continue
 
             try:
