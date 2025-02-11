@@ -7,6 +7,8 @@ from warc_record_parser import WarcRecordParser
 from output_writer import OutputWriter
 from processing_stats import ProcessingStats
 from writers.plain_text_writer import PlainTextWriter
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 
 
 class WarcProcessorFactory:
@@ -17,28 +19,44 @@ class WarcProcessorFactory:
     """
 
     def create(
-        self, processor_config: Optional[Dict[str, Any]] = None
+        self,
+        *,
+        processors: Optional[List[WarcRecordProcessor]] = None,
+        output_writer: Optional[OutputWriter] = None,
+        record_parser: Optional[WarcRecordParser] = None,
+        stats: Optional[ProcessingStats] = None,
+        processor_type: Optional[str] = None
     ) -> WarcProcessor:
         """Creates a WarcProcessor with default configuration.
 
         Args:
-            processor_config: Optional configuration dictionary. If provided,
-                will be used instead of defaults.
+            processors: Optional list of record processors. If not provided, will be determined by processor_type.
+            output_writer: Optional output writer. If not provided, uses PlainTextWriter.
+            record_parser: Optional record parser. If not provided, uses WarcRecordParser.
+            stats: Optional processing stats. If not provided, uses ProcessingStats.
+            processor_type: Optional processor type ('BeautifulSoupHtmlProcessor' or 'LexborHtmlProcessor').
+                If provided, will be used to create the processor list.
         """
-        if processor_config is None:
-            # Create default components
-            processors: List[WarcRecordProcessor] = []
-            output_writer: OutputWriter = PlainTextWriter()
+        # Create processor list based on type if not provided
+        if processors is None:
+            if processor_type == "BeautifulSoupHtmlProcessor":
+                processors = [BeautifulSoupHtmlProcessor()]
+            elif processor_type == "LexborHtmlProcessor":
+                processors = [LexborHtmlProcessor()]
+            else:
+                processors = []
+
+        # Use defaults for other components if not provided
+        if output_writer is None:
+            output_writer = PlainTextWriter()
+        if record_parser is None:
             record_parser = WarcRecordParser()
+        if stats is None:
             stats = ProcessingStats()
 
-            # Create WarcProcessor with default settings
-            return WarcProcessor(
-                processors=processors,
-                output_writer=output_writer,
-                record_parser=record_parser,
-                stats=stats
-            )
-
-        logging.debug("Creating processor with config: %s", processor_config)
-        return WarcProcessor(**processor_config)
+        return WarcProcessor(
+            processors=processors,
+            output_writer=output_writer,
+            record_parser=record_parser,
+            stats=stats
+        )

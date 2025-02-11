@@ -36,7 +36,7 @@ class TestRealWarc(unittest.TestCase):
     def test_process_sample_warc(self):
         """Tests processing a sample WARC file with plaintext output."""
         warc_path = os.path.join(
-            os.path.dirname(__file__), "..", "test_data", "sample.warc.gz"
+            os.path.dirname(__file__), "test_data", "sample.warc.gz"
         )
 
         # Skip test if WARC file doesn't exist
@@ -57,7 +57,7 @@ class TestRealWarc(unittest.TestCase):
             # Process WARC file using existing method
             start_time = datetime.now()
             factory = WarcProcessorFactory()
-            processor = factory.create({"class": "BeautifulSoupHtmlProcessor"})
+            processor = factory.create(processor_type="BeautifulSoupHtmlProcessor")
             processor.process_warc_file(warc_path, output_path)
 
             # Calculate processing time
