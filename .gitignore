@@ -49,3 +49,4 @@ test_data/
 output.txt
 create_sample.py
 warc-processor.spec
+output/*.txt

@@ -1,6 +1,7 @@
 """Tests for warc_processor_main module."""
 
 import unittest
+from unittest.mock import MagicMock, patch
 from warc_processor_main import main
 
 
@@ -34,10 +35,11 @@ class TestWarcProcessorMain(unittest.TestCase):
 
     def test_main_processes_input_file(self):
         """Test that main processes the input file successfully."""
-        mock_processor = unittest.mock.MagicMock()
+        mock_processor = MagicMock()
 
-        with unittest.mock.patch(
-            'warc_processor_factory.WarcProcessor', return_value=mock_processor
+        with patch(
+            'warc_processor_factory.WarcProcessorFactory.create',
+            return_value=mock_processor
         ):
             # Run the main function
             result = main([
@@ -48,18 +50,19 @@ class TestWarcProcessorMain(unittest.TestCase):
             # Verify the results
             self.assertEqual(result, 0)
             mock_processor.process_warc_file.assert_called_once_with(
-                self.test_file, self.output_file
+                self.test_file, self.output_file, overwrite=False
             )
 
     def test_main_handles_processing_error(self):
         """Test that main handles processing errors correctly."""
-        mock_processor = unittest.mock.MagicMock()
+        mock_processor = MagicMock()
         mock_processor.process_warc_file.side_effect = RuntimeError(
             "Test error"
         )
 
-        with unittest.mock.patch(
-            'warc_processor_factory.WarcProcessor', return_value=mock_processor
+        with patch(
+            'warc_processor_factory.WarcProcessorFactory.create',
+            return_value=mock_processor
         ):
             # Run the main function
             result = main([
@@ -70,7 +73,7 @@ class TestWarcProcessorMain(unittest.TestCase):
             # Verify the results
             self.assertEqual(result, 1)
             mock_processor.process_warc_file.assert_called_once_with(
-                self.test_file, self.output_file
+                self.test_file, self.output_file, overwrite=False
             )
 
 

@@ -18,6 +18,11 @@ def main(args=None):
         required=True,
         help="Output file for processed content"
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite output file if it exists"
+    )
 
     args = parser.parse_args(args)
 
@@ -42,7 +47,9 @@ def main(args=None):
         output_dir = os.path.dirname(output_file)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        warc_processor.process_warc_file(input_file, output_file)
+        warc_processor.process_warc_file(
+            input_file, output_file, overwrite=args.overwrite
+        )
         return 0
     except (OSError, RuntimeError) as e:
         logging.error("Error processing %s: %s", input_file, e)
