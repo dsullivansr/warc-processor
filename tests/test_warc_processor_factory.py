@@ -91,20 +91,8 @@ class TestWarcProcessorFactory(unittest.TestCase):
         class InvalidOutputWriters(Enum):
             INVALID = auto()
 
-        class InvalidRecordParsers(Enum):
-            INVALID = auto()
-
-        class InvalidStats(Enum):
-            INVALID = auto()
-
         with self.assertRaises(ValueError):
             self.factory.create(processors=InvalidProcessors.INVALID)
 
         with self.assertRaises(ValueError):
             self.factory.create(output_writer=InvalidOutputWriters.INVALID)
-
-        with self.assertRaises(ValueError):
-            self.factory.create(record_parser=InvalidRecordParsers.INVALID)
-
-        with self.assertRaises(ValueError):
-            self.factory.create(stats=InvalidStats.INVALID)

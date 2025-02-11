@@ -5,12 +5,7 @@ from writers.plain_text_writer import PlainTextWriter
 from writers.json_writer import JsonWriter
 from processors.lexbor_html_processor import LexborHtmlProcessor
 from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from warc_processor_types import (
-    OutputWriters,
-    RecordProcessors,
-    RecordParsers,
-    ProcessingStats as StatsTypes
-)
+from warc_processor_types import OutputWriters, RecordProcessors
 
 
 class WarcProcessorFactory:
@@ -25,8 +20,8 @@ class WarcProcessorFactory:
         *,
         processors: RecordProcessors = RecordProcessors.DEFAULT,
         output_writer: OutputWriters = OutputWriters.DEFAULT,
-        record_parser: RecordParsers = RecordParsers.DEFAULT,
-        stats: StatsTypes = StatsTypes.DEFAULT
+        record_parser=None,
+        stats=None
     ) -> WarcProcessor:
         """Creates a WarcProcessor with specified configuration.
 
@@ -35,10 +30,8 @@ class WarcProcessorFactory:
                 Defaults to RecordProcessors.LEXBOR.
             output_writer: Output writer instance or OutputWriters enum.
                 Defaults to OutputWriters.PLAIN_TEXT.
-            record_parser: Record parser instance or RecordParsers enum.
-                Defaults to RecordParsers.DEFAULT.
-            stats: Processing stats instance or StatsTypes enum.
-                Defaults to StatsTypes.DEFAULT.
+            record_parser: Optional record parser instance.
+            stats: Optional stats instance.
         """
         # Create processor from enum
         if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
@@ -59,15 +52,8 @@ class WarcProcessorFactory:
         else:
             raise ValueError(f"Unknown writer type: {output_writer}")
 
-        if record_parser == RecordParsers.DEFAULT:
-            parser = WarcRecordParser()
-        else:
-            raise ValueError(f"Unknown parser type: {record_parser}")
-
-        if stats == StatsTypes.DEFAULT:
-            stats_instance = ProcessingStats()
-        else:
-            raise ValueError(f"Unknown stats type: {stats}")
+        parser = record_parser or WarcRecordParser()
+        stats_instance = stats or ProcessingStats()
 
         return WarcProcessor(
             processor=processor,

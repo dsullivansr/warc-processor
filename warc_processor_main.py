@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from warc_processor_factory import WarcProcessorFactory
-from warc_processor_types import OutputWriters
+from warc_processor_types import OutputWriters, RecordProcessors
 
 
 def main(args=None):
@@ -30,6 +30,17 @@ def main(args=None):
         default="text",
         help="Output format (default: text)"
     )
+    parser.add_argument(
+        "--processor",
+        choices=[
+            "lexbor",
+            "beautiful_soup_lxml",
+            "beautiful_soup_html5",
+            "beautiful_soup_builtin"
+        ],
+        default="lexbor",
+        help="HTML processor to use (default: lexbor)"
+    )
 
     args = parser.parse_args(args)
 
@@ -39,7 +50,8 @@ def main(args=None):
 
     try:
         warc_processor = WarcProcessorFactory().create(
-            output_writer=OutputWriters[args.format.upper()]
+            output_writer=OutputWriters[args.format.upper()],
+            processors=RecordProcessors[args.processor.upper()]
         )
 
         # Create output directory if it doesn't exist

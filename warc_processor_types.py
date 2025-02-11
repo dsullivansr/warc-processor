@@ -23,13 +23,3 @@ class RecordProcessors(Enum):
     BEAUTIFUL_SOUP_LXML = auto()    # BeautifulSoupHtmlProcessor with lxml
     BEAUTIFUL_SOUP_HTML5 = auto()   # BeautifulSoupHtmlProcessor with html5lib
     BEAUTIFUL_SOUP_BUILTIN = auto()  # BeautifulSoup with html.parser
-
-
-class RecordParsers(Enum):
-    """Available record parser types."""
-    DEFAULT = auto()
-
-
-class ProcessingStats(Enum):
-    """Available processing stats types."""
-    DEFAULT = auto()
