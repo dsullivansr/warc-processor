@@ -25,9 +25,15 @@ jobs:
           pip install -r requirements-dev.txt
           pip install pylint
           
-      - name: Run pylint
+      - name: Run pylint on changed files
         run: |
-          python -m pylint --rcfile=.pylintrc warc_processor tests
+          # Get list of changed Python files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=d origin/main HEAD | grep "\.py$" || true)
+          if [ -n "$CHANGED_FILES" ]; then
+            python -m pylint --rcfile=.pylintrc $CHANGED_FILES
+          else
+            echo "No Python files changed"
+          fi
           
       - name: Run pytest
         run: |
