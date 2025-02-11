@@ -5,8 +5,8 @@ import logging
 
 import lxml.html  # pylint: disable=no-member
 
-from models.warc_mime_types import ContentType
-from warc_record_processor import ProcessorInput, WarcRecordProcessor
+from models.warc_record import WarcRecord
+from warc_record_processor import WarcRecordProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -14,31 +14,36 @@ logger = logging.getLogger(__name__)
 class LexborHtmlProcessor(WarcRecordProcessor):
     """HTML processor that uses Lexbor for parsing."""
 
-    def can_process(self, content_type: ContentType) -> bool:
-        """Check if this processor can handle the content type.
+    def can_process(self, content_type) -> bool:
+        """Check if this processor can handle the record or content type.
 
         This processor only handles standard HTML content (text/html).
         For XHTML content, use BeautifulSoupHtmlProcessor.
 
         Args:
-            content_type: Content type to check
+            record_or_type: WARC record or ContentType to check
 
         Returns:
-            True if this processor can handle the content type
+            True if this processor can handle the record
         """
+        # Handle both WarcRecord and ContentType for backward compatibility
+        if hasattr(content_type, 'content_type'):
+            content_type = content_type.content_type
+
         if not content_type:
             return False
 
         # Only handle text/html, not application/xhtml+xml
         return (
-            content_type.main_type == "text" and content_type.subtype == "html"
+            content_type.main_type == "text" and
+            content_type.subtype == "html"
         )
 
-    def process(self, processor_input: ProcessorInput) -> str:
+    def process(self, processor_input: WarcRecord) -> str:
         """Process HTML content using Lexbor.
 
         Args:
-            processor_input: Input to process
+            processor_input: WARC record to process
 
         Returns:
             Extracted text content
