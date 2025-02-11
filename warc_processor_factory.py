@@ -1,56 +1,44 @@
-import importlib
 import logging
-import os
+from typing import Any, Dict, List, Optional
 
-from typing import Any, Dict, List
+from warc_processor import WarcProcessor
+from warc_record_processor import WarcRecordProcessor
+from warc_record_parser import WarcRecordParser
+from output_writer import OutputWriter
+from processing_stats import ProcessingStats
+from writers.plain_text_writer import PlainTextWriter
 
 
 class WarcProcessorFactory:
-    """Factory class for creating WARC processors."""
+    """Factory class for creating WARC processors with default configuration.
+    
+    This factory creates a WarcProcessor instance with default settings,
+    ensuring compatibility with PyInstaller by avoiding dynamic imports.
+    """
 
-    def __init__(self) -> None:
-        self.processors: Dict[str, Any] = {}
+    def create(
+        self, processor_config: Optional[Dict[str, Any]] = None
+    ) -> WarcProcessor:
+        """Creates a WarcProcessor with default configuration.
 
-    def create(self, processor_config: Dict[str, Any] = None) -> Any:
-        """Creates a processor based on the given configuration.
-        If no configuration is provided, uses a default configuration."""
+        Args:
+            processor_config: Optional configuration dictionary. If provided,
+                will be used instead of defaults.
+        """
         if processor_config is None:
-            processor_config = {
-                'class': 'warc_processor.WarcProcessor'
-            }
+            # Create default components
+            processors: List[WarcRecordProcessor] = []
+            output_writer: OutputWriter = PlainTextWriter()
+            record_parser = WarcRecordParser()
+            stats = ProcessingStats()
 
-        logging.debug("Creating processor: %s", processor_config)
-
-        # Load the module
-        try:
-            module_name = processor_config["class"].split(".")[0]
-            module = importlib.import_module(module_name)
-        except ImportError as e:
-            logging.error("Could not import module %s: %s", module_name, e)
-            raise
-
-        # Load the class
-        class_name = processor_config["class"].split(".")[-1]
-        processor_class = getattr(module, class_name, None)
-        if processor_class is None:
-            raise AttributeError(
-                f"Module '{module_name}' has no attribute '{class_name}'"
+            # Create WarcProcessor with default settings
+            return WarcProcessor(
+                processors=processors,
+                output_writer=output_writer,
+                record_parser=record_parser,
+                stats=stats
             )
 
-        if "config" in processor_config:
-            config = processor_config["config"]
-            processor = processor_class(**config)
-        else:
-            processor = processor_class()
-
-        return processor
-
-    def get_available_processors(self, directory: str) -> List[str]:
-        """Gets all available processors in the given directory."""
-        processors_list: List[str] = []
-        for filename in os.listdir(directory):
-            if filename.endswith(".py") and filename != "__init__.py":
-                processors_list.append(filename[:-3])
-
-        logging.debug("Available processors: %s", processors_list)
-        return processors_list
+        logging.debug("Creating processor with config: %s", processor_config)
+        return WarcProcessor(**processor_config)

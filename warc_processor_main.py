@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from warc_processor_factory import WarcProcessorFactory
 
@@ -22,7 +23,13 @@ def main(args=None):
 
     try:
         warc_processor = WarcProcessorFactory().create()
-        warc_processor.process(input_file)
+        # Create output path by appending .txt to input file
+        output_file = input_file + '.txt'
+        # Create output directory if it doesn't exist
+        output_dir = os.path.dirname(output_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        warc_processor.process_warc_file(input_file, output_file)
         return 0
     except (OSError, RuntimeError) as e:
         logging.error("Error processing %s: %s", input_file, e)
