@@ -11,10 +11,14 @@ class WarcProcessorFactory:
     def __init__(self) -> None:
         self.processors: Dict[str, Any] = {}
 
-    def create(self, processor_config: Dict[str, Any]) -> Any:
-        """
-        Creates a processor based on the given configuration.
-        """
+    def create(self, processor_config: Dict[str, Any] = None) -> Any:
+        """Creates a processor based on the given configuration.
+        If no configuration is provided, uses a default configuration."""
+        if processor_config is None:
+            processor_config = {
+                'class': 'warc_processor.WarcProcessor'
+            }
+
         logging.debug("Creating processor: %s", processor_config)
 
         # Load the module
@@ -26,10 +30,11 @@ class WarcProcessorFactory:
             raise
 
         # Load the class
-        processor_class = getattr(module, processor_config["class"], None)
+        class_name = processor_config["class"].split(".")[-1]
+        processor_class = getattr(module, class_name, None)
         if processor_class is None:
             raise AttributeError(
-                f"Module '{module_name}' has no attribute '{processor_config['class']}'"
+                f"Module '{module_name}' has no attribute '{class_name}'"
             )
 
         if "config" in processor_config:

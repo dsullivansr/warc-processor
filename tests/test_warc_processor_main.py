@@ -21,17 +21,47 @@ class TestWarcProcessorMain(unittest.TestCase):
         with open(self.test_file, "wb") as f:
             f.write(self.test_content)
 
-    def test_warc_processor_exits_when_no_input_files_are_provided(self):
+    def test_main_requires_input_argument(self):
+        """Test that main requires the --input argument."""
         with self.assertRaises(SystemExit):
-            main(["--config", "dummy_config.yaml"])
+            main([])
 
+    def test_main_processes_input_file(self):
+        """Test that main processes the input file successfully."""
+        mock_module = unittest.mock.MagicMock()
+        mock_processor_class = unittest.mock.MagicMock()
+        mock_processor = unittest.mock.MagicMock()
+        mock_module.WarcProcessor = mock_processor_class
+        mock_processor_class.return_value = mock_processor
 
+        with unittest.mock.patch(
+            'importlib.import_module', return_value=mock_module
+        ):
+            # Run the main function
+            result = main(['--input', self.test_file])
 
+            # Verify the results
+            self.assertEqual(result, 0)
+            mock_processor.process.assert_called_once_with(self.test_file)
 
+    def test_main_handles_processing_error(self):
+        """Test that main handles processing errors correctly."""
+        mock_module = unittest.mock.MagicMock()
+        mock_processor_class = unittest.mock.MagicMock()
+        mock_processor = unittest.mock.MagicMock()
+        mock_module.WarcProcessor = mock_processor_class
+        mock_processor_class.return_value = mock_processor
+        mock_processor.process.side_effect = RuntimeError("Test error")
 
-    def test_no_input_files_are_provided(self):
-        with self.assertRaises(SystemExit):
-            self.assertEqual(main([]), None)
+        with unittest.mock.patch(
+            'importlib.import_module', return_value=mock_module
+        ):
+            # Run the main function
+            result = main(['--input', self.test_file])
+
+            # Verify the results
+            self.assertEqual(result, 1)
+            mock_processor.process.assert_called_once_with(self.test_file)
 
 
 if __name__ == "__main__":
