@@ -11,27 +11,6 @@ from warc_processor_factory import WarcProcessorFactory
 class TestRealWarc(unittest.TestCase):
     """Test cases using real WARC files."""
 
-    def setUp(self):
-        """Set up test case."""
-        self.config_file = os.path.join(
-            tempfile.gettempdir(), "test_config.yaml"
-        )
-
-        # Create test config
-        with open(self.config_file, "w", encoding="utf-8") as f:
-            f.write(
-                """processors:
-  - class: BeautifulSoupHtmlProcessor
-    config:
-      parser: html5lib
-  - class: LexborHtmlProcessor
-    config: {}"""
-            )
-
-    def tearDown(self):
-        """Clean up test case."""
-        if os.path.exists(self.config_file):
-            os.remove(self.config_file)
 
     def test_process_sample_warc(self):
         """Tests processing a sample WARC file with plaintext output."""

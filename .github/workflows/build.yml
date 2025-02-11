@@ -98,7 +98,7 @@ jobs:
           RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
           RELEASE_DIR="dist/${RELEASE_NAME}"
           cp dist/warc-processor "${RELEASE_DIR}/"
-          cp config.yaml "${RELEASE_DIR}/"
+
           cp README.md "${RELEASE_DIR}/"
           cp LICENSE "${RELEASE_DIR}/"
           cat > "${RELEASE_DIR}/QUICKSTART.md" << 'EOF'
