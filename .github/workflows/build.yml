@@ -91,7 +91,6 @@ jobs:
           python -m PyInstaller \
             --onefile \
             --name warc-processor \
-            --add-data "config.yaml:." \
             warc_processor_main.py
 
       - name: Package release
