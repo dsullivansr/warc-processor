@@ -33,34 +33,50 @@ jobs:
         run: |
           pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=warc_processor --cov-report=xml
           
+      - name: Install PyInstaller
+        run: python -m pip install pyinstaller
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(python3 -c "exec(open('setup.py').read()); print(__version__)" 2>/dev/null || date +"%Y.%m.%d")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Build binary
         run: |
-          pip install pyinstaller
-          VERSION=$(python3 -c "exec(open('setup.py').read()); print(__version__)" 2>/dev/null || date +"%Y.%m.%d")
-          RELEASE_NAME="warc-processor-${VERSION}-linux-x86_64"
+          RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
           RELEASE_DIR="dist/${RELEASE_NAME}"
           rm -rf build dist/*
           mkdir -p "${RELEASE_DIR}"
-          python3 -m PyInstaller --onefile --name warc-processor --add-data "config.yaml:." warc_processor_main.py
+          python -m PyInstaller \
+            --onefile \
+            --name warc-processor \
+            --add-data "config.yaml:." \
+            warc_processor_main.py
+
+      - name: Package release
+        run: |
+          RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
+          RELEASE_DIR="dist/${RELEASE_NAME}"
           cp dist/warc-processor "${RELEASE_DIR}/"
           cp config.yaml "${RELEASE_DIR}/"
           cp README.md "${RELEASE_DIR}/"
           cp LICENSE "${RELEASE_DIR}/"
           cat > "${RELEASE_DIR}/QUICKSTART.md" << 'EOF'
           # WARC Processor Quick Start Guide
-          
+
           This is a standalone binary release of the WARC Processor tool.
-          
+
           ## Usage
-          
+
           1. Make the binary executable:
              chmod +x warc-processor
-          
+
           2. Run the processor:
-             ./warc-processor [arguments]
-          
+             ./warc-processor --input input.warc --output output.txt
+
           The binary includes all necessary dependencies and does not require Python to be installed.
-          
+
           For full documentation, please see README.md
           EOF
           cd dist
@@ -69,9 +85,7 @@ jobs:
           echo "Created release archive: dist/${RELEASE_NAME}.tar.gz"
       - name: Test binary
         run: |
-          # Recalculate version and release name
-          VERSION=$(python3 -c "exec(open('setup.py').read()); print(__version__)" 2>/dev/null || date +"%Y.%m.%d")
-          RELEASE_NAME="warc-processor-${VERSION}-linux-x86_64"
+          RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
           echo "Testing binary for release: ${RELEASE_NAME}"
           # Extract the archive
           mkdir -p dist/test_extract
