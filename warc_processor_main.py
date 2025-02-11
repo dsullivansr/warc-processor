@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import sys
 from warc_processor_factory import WarcProcessorFactory
@@ -23,7 +24,9 @@ def main(args=None):
         print("No input files provided.")
         sys.exit(1)
 
-    warc_processor = WarcProcessorFactory().create()
+    with open(args.config, encoding='utf-8') as f:
+        config = json.load(f)
+    warc_processor = WarcProcessorFactory().create(config)
 
     for file in args.input_files:
         logging.info("Processing %s", file)
