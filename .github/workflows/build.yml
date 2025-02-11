@@ -65,9 +65,11 @@ jobs:
             echo "Patch version bump"
           fi
           # Update version.py
-          echo "\"\"\"Version information.\"\"\"
+          cat > warc_processor/version.py << 'EOL'
+          """Version information."""
 
-__version__ = \"${NEW_VERSION}\"" > warc_processor/version.py
+          __version__ = "${NEW_VERSION}"
+          EOL
           # Set output for later steps
           echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           # Configure git
