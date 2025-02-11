@@ -2,9 +2,13 @@
 
 from setuptools import find_packages, setup
 
+# Read version from version.py
+with open('warc_processor/version.py', 'r', encoding='utf-8') as f:
+    exec(f.read())
+
 setup(
     name="warc-processor",
-    version="0.1.1",
+    version=__version__,
     description="A Python library for processing WARC files",
     author="Daniel Sullivan",
     packages=find_packages(),
