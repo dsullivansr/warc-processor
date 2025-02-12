@@ -109,3 +109,4 @@ jobs:
         with:
           name: warc-processor-binary
           path: dist/warc-processor-*.tar.gz
+          overwrite: true  # Overwrite existing artifacts

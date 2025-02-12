@@ -54,6 +54,13 @@ jobs:
             git log --pretty=format:"- %s" $prev_tag..HEAD > RELEASE_NOTES.md
           fi
           
+      - name: Delete existing latest asset
+        uses: dev-drprasad/delete-tag-and-release@v1.0
+        with:
+          tag_name: latest
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          delete_release: true
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -64,5 +71,6 @@ jobs:
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
+          tag_name: latest  # Also tag this release as latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
