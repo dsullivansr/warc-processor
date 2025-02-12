@@ -52,9 +52,10 @@ def main(args=None):
         help="HTML processor to use. Options:\n"
              "  - lexbor: Fast C-based HTML parser (default)\n"
              "  - beautiful_soup_lxml: BS4 with lxml backend (fast)\n"
-             "  - beautiful_soup_html5: BS4 with html5lib "
+             "  - beautiful_soup_html5: BS4 with html5lib " \
              "(slow but handles invalid HTML)\n"
-             "  - beautiful_soup_builtin: BS4 with Python's built-in parser"
+             "  - beautiful_soup_builtin: BS4 with Python's " \
+             "built-in parser"
     )
 
     args = parser.parse_args(args)
@@ -66,8 +67,18 @@ def main(args=None):
 
     try:
         warc_processor = WarcProcessorFactory().create(
-            output_writer=OutputWriters[args.format.upper()],
-            processors=RecordProcessors[args.processor.upper()]
+            output_writer=(
+                OutputWriters.JSON if args.format == 'json'
+                else OutputWriters.TEXT
+            ),
+            processors={
+                'lexbor': RecordProcessors.LEXBOR,
+                'beautiful_soup_lxml': RecordProcessors.BEAUTIFUL_SOUP_LXML,
+                'beautiful_soup_html5': RecordProcessors.BEAUTIFUL_SOUP_HTML5,
+                'beautiful_soup_builtin': (
+                    RecordProcessors.BEAUTIFUL_SOUP_BUILTIN
+                )
+            }[args.processor]
         )
 
         # Create output directory if it doesn't exist
@@ -75,9 +86,10 @@ def main(args=None):
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
 
-        warc_processor.process_warc_file(
+        stats = warc_processor.process_warc_file(
             args.input, args.output, overwrite=args.overwrite
         )
+        print(stats.get_summary())
         return 0
     except (OSError, RuntimeError) as e:
         logging.error("Error processing %s: %s", args.input, e)

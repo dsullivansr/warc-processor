@@ -126,10 +126,14 @@ class WarcProcessor:
                 self.output_writer.write_record(processed_record)
                 self.stats.track_processed_record()
             else:
+                logger.debug(
+                    "Skipping record %s - no content processed",
+                    parsed_record.record_id
+                )
                 self.stats.track_skipped_record()
         except (ValueError, AttributeError) as e:
             logger.error("Failed to process record: %s", str(e))
-            self.stats.track_skipped_record()
+            self.stats.track_failed_record()
 
     def _process_record(self, record: WarcRecord) -> Optional[str]:
         """Process a single WARC record.
@@ -147,17 +151,22 @@ class WarcProcessor:
         if record.content:
             self.stats.track_bytes_processed(len(record.content))
 
+        # Skip if processor can't handle content type
+        if not self.processor.can_process(record.content_type):
+            logger.debug(
+                "Skipping record %s - unsupported content type: %s",
+                record.record_id, record.content_type
+            )
+            return None
+
         try:
-            # Try to process with our processor
-            if self.processor.can_process(record.content_type):
-                processor_input = ProcessorInput(
-                    content=record.content, content_type=record.content_type
-                )
-                return self.processor.process(processor_input)
+            processor_input = ProcessorInput(
+                content=record.content, content_type=record.content_type
+            )
+            return self.processor.process(processor_input)
         except (ValueError, AttributeError) as e:
             logger.error(
                 "Failed to process record %s: %s", record.record_id, str(e)
             )
+            self.stats.track_failed_record()
             return None
-
-        return None

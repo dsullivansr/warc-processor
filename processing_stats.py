@@ -99,9 +99,67 @@ class ProcessingStats:
         """Track successfully parsed record."""
         self.records_parsed += 1
 
-    def track_processed_record(self) -> None:
-        """Track successfully processed record."""
-        self.records_processed += 1
+
+
+    @property
+    def processing_time(self) -> Optional[timedelta]:
+        """Get total processing time.
+
+        Returns:
+            Total processing time or None if processing not finished
+        """
+        if not self.start_time or not self.end_time:
+            return None
+        return self.end_time - self.start_time
+
+    @property
+    def processing_speed_mb_per_sec(self) -> Optional[float]:
+        """Get processing speed in MB/sec.
+
+        Returns:
+            Processing speed in MB/sec or None if processing not finished
+        """
+        if not self.processing_time:
+            return None
+        return self.input_size_mb / self.processing_time.total_seconds()
+
+    @property
+    def records_per_sec(self) -> Optional[float]:
+        """Get records processed per second.
+
+        Returns:
+            Records per second or None if processing not finished
+        """
+        if not self.processing_time:
+            return None
+        return self.records_processed / self.processing_time.total_seconds()
+
+    def get_summary(self) -> str:
+        """Get a formatted summary of processing statistics.
+
+        Returns:
+            Formatted string with processing statistics
+        """
+        if not self.processing_time:
+            return "Processing not completed"
+
+        # Remove microseconds
+        time_str = str(self.processing_time).split('.', maxsplit=1)[0]
+        speed = self.processing_speed_mb_per_sec or 0
+        rps = self.records_per_sec or 0
+
+        return (
+            f"\nProcessing Summary:\n"
+            f"  Time: {time_str}\n"
+            f"  Input Size: {self.input_size_mb:.1f} MB\n"
+            f"  Speed: {speed:.1f} MB/sec\n"
+            f"\nRecord Statistics:\n"
+            f"  Total Records: {self.records_parsed}\n"
+            f"  Successfully Processed: {self.records_processed}\n"
+            f"  Skipped: {self.records_skipped}\n"
+            f"  Failed: {self.records_failed}\n"
+            f"  Processing Rate: {rps:.1f} records/sec\n"
+        )
 
     def track_skipped_record(self) -> None:
         """Track skipped record."""
@@ -111,71 +169,12 @@ class ProcessingStats:
         """Track failed record."""
         self.records_failed += 1
 
-    def get_processing_time(self) -> timedelta:
-        """Get total processing time.
+    def track_processed_record(self) -> None:
+        """Track successfully processed record."""
+        self.records_processed += 1
 
-        Returns:
-            Time elapsed between start and end
-        """
-        if not self.start_time or not self.end_time:
-            return timedelta()
-        return self.end_time - self.start_time
-
-    def get_processing_rate(self) -> Optional[float]:
-        """Get processing rate in MB/s.
-
-        Returns:
-            Processing rate in MB/s, or None if processing hasn't finished
-        """
-        if not self.start_time or not self.end_time:
-            return None
-
-        processing_time = self.get_processing_time().total_seconds()
-        if processing_time <= 0:
-            return None
-
-        return self.input_size_mb / processing_time
-
-    def _update_progress(self, force: bool = False) -> None:
-        """Update progress tracking.
-
-        Args:
-            force (bool): If True, update progress regardless of interval.
-        """
-        if not self.start_time:
-            return
-
-        current_time = datetime.now()
-        if not force and (current_time - self.start_time) < timedelta(
-            seconds=1
-        ):
-            return
-
-        total = (
-            self.records_processed + self.records_skipped + self.records_failed
-        )
-
-        # Log progress every 100 records or when forced
-        if total % 100 == 0 or force:
-            mb_processed = self.bytes_processed / (1024 * 1024)
-
-            # Calculate percent complete and processing rate
-            if self.input_size > 0:
-                pct = 100.0 * self.bytes_processed / self.input_size
-            else:
-                pct = 0
-
-            rate = self.get_processing_rate()
-            rate_str = f", {rate:.1f} MB/s" if rate else ""
-
-            # Break long log message into multiple lines
-            msg = "Processed %d records (%.1f/%.1f MB, %.1f%%%s)"
-            logger.info(
-                msg, total, mb_processed, self.input_size_mb, pct, rate_str
-            )
-
-    def get_summary(self) -> dict:
-        """Get summary of processing statistics.
+    def get_summary_dict(self) -> dict:
+        """Get summary of processing statistics as a dictionary.
 
         Returns:
             Dictionary containing processing statistics
@@ -188,6 +187,6 @@ class ProcessingStats:
             "bytes_processed": self.bytes_processed,
             "input_size": self.input_size,
             "input_size_mb": self.input_size_mb,
-            "processing_time": self.get_processing_time(),
-            "processing_rate": self.get_processing_rate(),
+            "processing_time": self.processing_time,
+            "processing_rate": self.processing_speed_mb_per_sec,
         }
