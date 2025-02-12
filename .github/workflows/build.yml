@@ -51,10 +51,8 @@ jobs:
 
       - name: Build binary
         run: |
+          pip install pyinstaller
           RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
-          RELEASE_DIR="dist/${RELEASE_NAME}"
-          rm -rf build dist/*
-          mkdir -p "${RELEASE_DIR}"
           python -m PyInstaller \
             --onefile \
             --name warc-processor \
@@ -64,49 +62,27 @@ jobs:
         run: |
           RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
           RELEASE_DIR="dist/${RELEASE_NAME}"
+          mkdir -p "${RELEASE_DIR}"
           cp dist/warc-processor "${RELEASE_DIR}/"
+          cp README.md LICENSE "${RELEASE_DIR}/"
+          tar czf "dist/${RELEASE_NAME}.tar.gz" -C dist "${RELEASE_NAME}"
+          rm -rf "${RELEASE_DIR}"
 
-          [ -f README.md ] && cp README.md "${RELEASE_DIR}/" || echo "No README.md found"
-          [ -f LICENSE ] && cp LICENSE "${RELEASE_DIR}/" || echo "No LICENSE found"
-          cat > "${RELEASE_DIR}/QUICKSTART.md" << 'EOF'
-          # WARC Processor Quick Start Guide
-
-          This is a standalone binary release of the WARC Processor tool.
-
-          ## Usage
-
-          1. Make the binary executable:
-             chmod +x warc-processor
-
-          2. Run the processor:
-             ./warc-processor --input input.warc --output output.txt
-
-          The binary includes all necessary dependencies and does not require Python to be installed.
-
-          For full documentation, please see README.md
-          EOF
-          cd dist
-          tar czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
-          rm -rf "${RELEASE_NAME}"
-          echo "Created release archive: dist/${RELEASE_NAME}.tar.gz"
       - name: Test binary
         run: |
           RELEASE_NAME="warc-processor-${{ steps.version.outputs.version }}-linux-x86_64"
-          echo "Testing binary for release: ${RELEASE_NAME}"
-          # Extract the archive
           mkdir -p dist/test_extract
           tar -xzf "dist/${RELEASE_NAME}.tar.gz" -C dist/test_extract
-          # Run the binary with --help and check output
           OUTPUT=$(dist/test_extract/${RELEASE_NAME}/warc-processor --help || true)
-          echo "$OUTPUT"
           if [[ "$OUTPUT" != *"usage"* ]]; then
             echo "Binary test failed: missing 'usage' in output"
             exit 1
           fi
           echo "Binary test passed"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: warc-processor-binary
-          path: dist/warc-processor-*.tar.gz
-          overwrite: true  # Overwrite existing artifacts
+          name: warc-processor-${{ steps.version.outputs.version }}
+          path: dist/*.tar.gz
+          overwrite: true
