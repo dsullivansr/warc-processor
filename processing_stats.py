@@ -134,8 +134,8 @@ class ProcessingStats:
             return None
         return self.records_processed / self.processing_time.total_seconds()
 
-    def get_summary(self) -> str:
-        """Get a formatted summary of processing statistics.
+    def get_summary_text(self) -> str:
+        """Get a formatted text summary of processing statistics.
 
         Returns:
             Formatted string with processing statistics
@@ -161,6 +161,23 @@ class ProcessingStats:
             f"  Processing Rate: {rps:.1f} records/sec\n"
         )
 
+    def get_summary(self) -> dict:
+        """Get a dictionary summary of processing statistics.
+
+        Returns:
+            Dictionary containing processing statistics
+        """
+        return {
+            "records_parsed": self.records_parsed,
+            "records_processed": self.records_processed,
+            "records_skipped": self.records_skipped,
+            "records_failed": self.records_failed,
+            "input_size": self.input_size,
+            "input_size_mb": self.input_size_mb,
+            "processing_time": self.processing_time,
+            "processing_rate": self.processing_speed_mb_per_sec,
+        }
+
     def track_skipped_record(self) -> None:
         """Track skipped record."""
         self.records_skipped += 1
@@ -179,14 +196,4 @@ class ProcessingStats:
         Returns:
             Dictionary containing processing statistics
         """
-        return {
-            "records_parsed": self.records_parsed,
-            "records_processed": self.records_processed,
-            "records_skipped": self.records_skipped,
-            "records_failed": self.records_failed,
-            "bytes_processed": self.bytes_processed,
-            "input_size": self.input_size,
-            "input_size_mb": self.input_size_mb,
-            "processing_time": self.processing_time,
-            "processing_rate": self.processing_speed_mb_per_sec,
-        }
+        return self.get_summary()

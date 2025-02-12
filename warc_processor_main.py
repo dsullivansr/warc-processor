@@ -89,7 +89,7 @@ def main(args=None):
         stats = warc_processor.process_warc_file(
             args.input, args.output, overwrite=args.overwrite
         )
-        print(stats.get_summary())
+        print(stats.get_summary_text())
         return 0
     except (OSError, RuntimeError) as e:
         logging.error("Error processing %s: %s", args.input, e)
