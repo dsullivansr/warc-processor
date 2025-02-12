@@ -27,6 +27,14 @@ jobs:
           cd deploy/binary
           ./create_release.sh
           
+      - name: Create latest asset
+        run: |
+          cd dist
+          # Get the versioned filename
+          VERSION_FILE=$(ls warc-processor-*.tar.gz)
+          # Create a copy with -latest suffix
+          cp "$VERSION_FILE" "warc-processor-latest.tar.gz"
+          
       - name: Generate checksums
         run: |
           cd dist
@@ -51,6 +59,7 @@ jobs:
         with:
           files: |
             dist/warc-processor-*.tar.gz
+            dist/warc-processor-latest.tar.gz
             dist/SHA256SUMS
           body_path: RELEASE_NOTES.md
           draft: false
