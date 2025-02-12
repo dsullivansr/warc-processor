@@ -54,7 +54,7 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_stats = MagicMock(spec=ProcessingStats)
 
         self.processor = WarcProcessor(
-            processors=[self.mock_processor],
+            processor=self.mock_processor,
             output_writer=self.mock_output_writer,
             record_parser=self.mock_record_parser,
             stats=self.mock_stats,

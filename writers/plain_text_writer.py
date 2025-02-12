@@ -66,6 +66,24 @@ class PlainTextWriter(OutputWriter):
             raise ValueError("Writer is not configured")
 
         with open(self.output_path, "a", encoding="utf-8") as f:
-            # Write processed content followed by YAML document separator
+            # Start WARC record
+            f.write("WARC/1.0\n")
+            # Write WARC record header
+            f.write(f"WARC-Type: {record.record.record_type}\n")
+            f.write(f"WARC-Target-URI: {record.record.target_uri}\n")
+            warc_date = record.record.date.strftime('%Y-%m-%dT%H:%M:%SZ')
+            f.write(f"WARC-Date: {warc_date}\n")
+            f.write(f"WARC-Record-ID: {record.record.record_id}\n")
+            if record.record.payload_digest:
+                f.write(f"WARC-Payload-Digest: {record.record.payload_digest}\n")
+            # Write additional headers from the original record
+            for header_name, header_value in record.record.headers.items():
+                if not header_name.startswith('Content-Length'):
+                    f.write(f"{header_name}: {header_value}\n")
+            content_bytes = record.processed_content.encode('utf-8')
+            f.write(f"Content-Length: {len(content_bytes)}\n")
+            f.write("\n")
             f.write(record.processed_content)
-            f.write("\n---\n")
+            f.write("\n")
+            # End WARC record
+            f.write("WARC/1.0\n\n")

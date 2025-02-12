@@ -5,7 +5,7 @@ from writers.plain_text_writer import PlainTextWriter
 from writers.json_writer import JsonWriter
 from processors.lexbor_html_processor import LexborHtmlProcessor
 from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from warc_processor_types import OutputWriters, RecordProcessors
+from models.component_types import OutputWriters, RecordProcessors
 
 
 class WarcProcessorFactory:

@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from warc_processor_factory import WarcProcessorFactory
-from warc_processor_types import OutputWriters, RecordProcessors
+from models.component_types import OutputWriters, RecordProcessors
 
 
 def main(args=None):

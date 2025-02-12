@@ -4,7 +4,7 @@ import unittest
 from enum import Enum, auto
 
 from warc_processor_factory import WarcProcessorFactory
-from warc_processor_types import (
+from models.component_types import (
     OutputWriters,
     RecordProcessors,
 )
