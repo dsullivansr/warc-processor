@@ -9,11 +9,11 @@ from unittest.mock import MagicMock, patch
 
 from models.warc_mime_types import ContentType
 from models.warc_record import WarcRecord
-from warc_record_processor import ProcessorInput, WarcRecordProcessor
+from output_writer import OutputWriter
+from processing_stats import ProcessingStats
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
-from processing_stats import ProcessingStats
-from output_writer import OutputWriter
+from warc_record_processor import ProcessorInput, WarcRecordProcessor
 
 
 class MockProcessor(WarcRecordProcessor):
@@ -54,7 +54,7 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_stats = MagicMock(spec=ProcessingStats)
 
         self.processor = WarcProcessor(
-            processor=self.mock_processor,
+            processors=[self.mock_processor],
             output_writer=self.mock_output_writer,
             record_parser=self.mock_record_parser,
             stats=self.mock_stats,
@@ -99,7 +99,7 @@ class TestWarcProcessor(unittest.TestCase):
         result = self.processor._process_record(record)
 
         self.assertEqual(result, "processed")
-        self.mock_processor.can_process.assert_called_once_with(content_type)
+        self.mock_processor.can_process.assert_called_once_with(processor_input)
         self.mock_processor.process.assert_called_once_with(processor_input)
 
     def test_process_record_no_processor(self):
@@ -115,9 +115,7 @@ class TestWarcProcessor(unittest.TestCase):
 
     def test_process_record_processing_error(self):
         """Test when processing fails."""
-        self.mock_processor.process.side_effect = ValueError(
-            "Processing failed"
-        )
+        self.mock_processor.process.side_effect = ValueError("Processing failed")
         record = self.create_record(content_type="text/html")
 
         # pylint: disable=protected-access
@@ -168,7 +166,7 @@ class TestWarcProcessor(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             f"Output file already exists: {self.output_path}. "
-            "Use overwrite=True to overwrite."
+            "Use overwrite=True to overwrite.",
         )
 
     @patch("builtins.open", create=True)
@@ -184,9 +182,7 @@ class TestWarcProcessor(unittest.TestCase):
         self.mock_record_parser.parse.return_value = None
 
         # Should not raise FileExistsError
-        self.processor.process_warc_file(
-            "input.warc", self.output_path, overwrite=True
-        )
+        self.processor.process_warc_file("input.warc", self.output_path, overwrite=True)
 
         # Verify stats were tracked
         self.mock_stats.start_processing.assert_called_once_with("input.warc")
@@ -257,9 +253,7 @@ class TestWarcProcessor(unittest.TestCase):
         mock_open.return_value.__enter__.return_value = mock_file
 
         # Make first record fail processing
-        self.mock_processor.process.side_effect = ValueError(
-            "Processing failed"
-        )
+        self.mock_processor.process.side_effect = ValueError("Processing failed")
 
         self.processor.process_warc_file("test.warc", "test.out")
 

@@ -20,7 +20,7 @@ class WarcProcessor:
 
     def __init__(
         self,
-        processor: WarcRecordProcessor,
+        processors: list[WarcRecordProcessor],
         output_writer: OutputWriter,
         record_parser: WarcRecordParser,
         stats: ProcessingStats,
@@ -28,21 +28,20 @@ class WarcProcessor:
         """Initialize the processor.
 
         Args:
-            processor: Record processor to use
+            processors: List of record processors to use in sequence
             output_writer: Writer for processed records
             record_parser: Parser for WARC records
             stats: Processing statistics tracker
         """
-        self.processor = processor
+        if not processors:
+            raise ValueError("Must provide at least one processor")
+        self.processors = processors
         self.output_writer = output_writer
         self.record_parser = record_parser
         self.stats = stats
 
     def process_warc_file(
-        self,
-        input_path: str,
-        output_path: str,
-        overwrite: bool = False
+        self, input_path: str, output_path: str, overwrite: bool = False
     ) -> ProcessingStats:
         """Process a WARC file.
 
@@ -96,9 +95,7 @@ class WarcProcessor:
             for record in ArchiveIterator(warc_file):
                 total_records += 1
                 logger.debug(
-                    "Processing record %d of type %s",
-                    total_records,
-                    record.rec_type
+                    "Processing record %d of type %s", total_records, record.rec_type
                 )
                 self._process_single_record(record)
         logger.info("Processed %d total records", total_records)
@@ -127,8 +124,7 @@ class WarcProcessor:
                 self.stats.track_processed_record()
             else:
                 logger.debug(
-                    "Skipping record %s - no content processed",
-                    parsed_record.record_id
+                    "Skipping record %s - no content processed", parsed_record.record_id
                 )
                 self.stats.track_skipped_record()
         except (ValueError, AttributeError) as e:
@@ -136,13 +132,13 @@ class WarcProcessor:
             self.stats.track_failed_record()
 
     def _process_record(self, record: WarcRecord) -> Optional[str]:
-        """Process a single WARC record.
+        """Process a single WARC record through all processors.
 
         Args:
             record: WARC record to process
 
         Returns:
-            Processed text content or None if processing failed
+            Final processed text content or None if processing failed
         """
         if not record.content or not record.content_type:
             return None
@@ -151,22 +147,31 @@ class WarcProcessor:
         if record.content:
             self.stats.track_bytes_processed(len(record.content))
 
-        # Skip if processor can't handle content type
-        if not self.processor.can_process(record.content_type):
-            logger.debug(
-                "Skipping record %s - unsupported content type: %s",
-                record.record_id, record.content_type
-            )
-            return None
+        # Create processor input
+        current_content = record.content
+        current_content_type = record.content_type
 
-        try:
-            processor_input = ProcessorInput(
-                content=record.content, content_type=record.content_type
-            )
-            return self.processor.process(processor_input)
-        except (ValueError, AttributeError) as e:
-            logger.error(
-                "Failed to process record %s: %s", record.record_id, str(e)
-            )
-            self.stats.track_failed_record()
-            return None
+        # Process through each processor in sequence
+        for processor in self.processors:
+            try:
+                # Check if processor can handle this content
+                processor_input = ProcessorInput(
+                    content=current_content, content_type=current_content_type
+                )
+                if not processor.can_process(processor_input):
+                    continue
+
+                # Process the content
+                current_content = processor.process(processor_input)
+                if not current_content:
+                    continue
+
+            except (ValueError, AttributeError) as e:
+                logger.error(
+                    "Processor %s failed: %s", processor.__class__.__name__, str(e)
+                )
+                self.stats.track_failed_record()
+                return None
+
+        # Return final processed content
+        return current_content if current_content != record.content else None

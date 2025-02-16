@@ -95,9 +95,7 @@ class ContentType:
         """Check equality with another ContentType."""
         if not isinstance(other, ContentType):
             return NotImplemented
-        return (
-            self.main_type == other.main_type and self.subtype == other.subtype
-        )
+        return self.main_type == other.main_type and self.subtype == other.subtype
 
     def matches(self, pattern: str) -> bool:
         """Check if content type matches a pattern.
@@ -119,3 +117,23 @@ class ContentType:
             "*",
             self.subtype,
         }
+
+    @property
+    def is_text(self) -> bool:
+        """Check if content type is text-based.
+
+        Returns:
+            True if content type is text-based (text/*, application/json, etc.)
+        """
+        # Text types
+        if self.main_type == "text":
+            return True
+
+        # Special application types that are text-based
+        text_applications = {
+            "json",
+            "javascript",
+            "xml",
+            "x-www-form-urlencoded",
+        }
+        return self.main_type == "application" and self.subtype in text_applications

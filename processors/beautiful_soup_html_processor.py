@@ -31,31 +31,45 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
         self.parser = parser
         super().__init__()
 
-    def can_process(self, content_type: ContentType) -> bool:
-        """Check if this processor can handle the content type.
+    def can_process(self, processor_input) -> bool:
+        """Check if this processor can handle the input.
 
-        This processor handles both HTML (text/html) and XHTML.
+        This processor handles both HTML (text/html) and XHTML content.
         For standard HTML content, consider using LexborHtmlProcessor.
 
         Args:
-            content_type: Type of content to check.
+            processor_input: Input to potentially process (ProcessorInput or ContentType)
 
         Returns:
-            True if content is HTML or XHTML, False otherwise.
+            True if content is HTML or XHTML and not empty, False otherwise.
         """
+        # Handle both ProcessorInput and ContentType for backward compatibility
+        if hasattr(processor_input, "content_type"):
+            content_type = processor_input.content_type
+            content = processor_input.content
+        else:
+            content_type = processor_input
+            content = None
+
         if not content_type:
             return False
 
-        # Handle both text/html and application/xhtml+xml
-        if content_type.main_type == "text" and content_type.subtype == "html":
-            return True
-        if (
+        # First check content type
+        is_html = (
+            content_type.main_type == "text" and content_type.subtype == "html"
+        ) or (
             content_type.main_type == "application"
             and content_type.subtype == "xhtml+xml"
-        ):
-            return True
+        )
 
-        return False
+        if not is_html:
+            return False
+
+        # Then check if content is processable (only for ProcessorInput)
+        if content is not None:
+            return bool(content and not content.isspace())
+
+        return True
 
     def process(self, processor_input: ProcessorInput) -> str:
         """Process HTML content using BeautifulSoup.
@@ -69,7 +83,9 @@ class BeautifulSoupHtmlProcessor(WarcRecordProcessor):
         Raises:
             ValueError: If content is empty or whitespace
         """
-        if not processor_input.content or processor_input.content.isspace():
+        if not processor_input.content or (
+            processor_input.content.isspace()
+        ):
             raise ValueError("Content cannot be empty or whitespace")
 
         try:

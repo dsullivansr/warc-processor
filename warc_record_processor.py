@@ -33,14 +33,22 @@ class WarcRecordProcessor(ABC):
     """
 
     @abstractmethod
-    def can_process(self, content_type: ContentType) -> bool:
-        """Check if this processor can handle the content type.
+    def can_process(self, processor_input: ProcessorInput) -> bool:
+        """Check if this processor can handle the input.
+
+        This method determines whether the processor should handle the given input.
+        It can make this decision based on any aspect of the input, such as:
+        - Content type
+        - Content characteristics
+        - Content length
+        - Previous processing results
+        - etc.
 
         Args:
-            content_type: Type of content to check.
+            processor_input: Input to potentially process
 
         Returns:
-            True if this processor can handle the content type, False otherwise.
+            True if this processor should handle the input, False to skip it.
         """
 
     @abstractmethod

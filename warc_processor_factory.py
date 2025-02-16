@@ -1,16 +1,16 @@
+from models.component_types import OutputWriters, RecordProcessors
+from processing_stats import ProcessingStats
+from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
+from processors.lexbor_html_processor import LexborHtmlProcessor
 from warc_processor import WarcProcessor
 from warc_record_parser import WarcRecordParser
-from processing_stats import ProcessingStats
-from writers.plain_text_writer import PlainTextWriter
 from writers.json_writer import JsonWriter
-from processors.lexbor_html_processor import LexborHtmlProcessor
-from processors.beautiful_soup_html_processor import BeautifulSoupHtmlProcessor
-from models.component_types import OutputWriters, RecordProcessors
+from writers.plain_text_writer import PlainTextWriter
 
 
 class WarcProcessorFactory:
     """Factory class for creating WARC processors with default configuration.
-    
+
     This factory creates a WarcProcessor instance with default settings,
     ensuring compatibility with PyInstaller by avoiding dynamic imports.
     """
@@ -19,7 +19,7 @@ class WarcProcessorFactory:
         self,
         *,
         processors: RecordProcessors = RecordProcessors.DEFAULT,
-        output_writer: OutputWriters = OutputWriters.DEFAULT
+        output_writer: OutputWriters = OutputWriters.DEFAULT,
     ) -> WarcProcessor:
         """Creates a WarcProcessor with specified configuration.
 
@@ -30,17 +30,24 @@ class WarcProcessorFactory:
                 Defaults to OutputWriters.PLAIN_TEXT.
 
         """
-        # Create processor from enum
-        if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
-            processor = LexborHtmlProcessor()
-        elif processors == RecordProcessors.BEAUTIFUL_SOUP_LXML:
-            processor = BeautifulSoupHtmlProcessor(parser='lxml')
-        elif processors == RecordProcessors.BEAUTIFUL_SOUP_HTML5:
-            processor = BeautifulSoupHtmlProcessor(parser='html5lib')
-        elif processors == RecordProcessors.BEAUTIFUL_SOUP_BUILTIN:
-            processor = BeautifulSoupHtmlProcessor(parser='html.parser')
+        # Create processors from enum or list
+        processor_list = []
+
+        if isinstance(processors, (list, tuple)):
+            # Handle list of processor instances
+            processor_list.extend(processors)
         else:
-            raise ValueError(f"Unknown processor type: {processors}")
+            # Create processor from enum
+            if processors in (RecordProcessors.DEFAULT, RecordProcessors.LEXBOR):
+                processor_list.append(LexborHtmlProcessor())
+            elif processors == RecordProcessors.BEAUTIFUL_SOUP_LXML:
+                processor_list.append(BeautifulSoupHtmlProcessor(parser="lxml"))
+            elif processors == RecordProcessors.BEAUTIFUL_SOUP_HTML5:
+                processor_list.append(BeautifulSoupHtmlProcessor(parser="html5lib"))
+            elif processors == RecordProcessors.BEAUTIFUL_SOUP_BUILTIN:
+                processor_list.append(BeautifulSoupHtmlProcessor(parser="html.parser"))
+            else:
+                raise ValueError(f"Unknown processor type: {processors}")
 
         if output_writer in (OutputWriters.DEFAULT, OutputWriters.TEXT):
             writer = PlainTextWriter()
@@ -53,8 +60,8 @@ class WarcProcessorFactory:
         stats_instance = ProcessingStats()
 
         return WarcProcessor(
-            processor=processor,
+            processors=processor_list,
             output_writer=writer,
             record_parser=parser,
-            stats=stats_instance
+            stats=stats_instance,
         )
